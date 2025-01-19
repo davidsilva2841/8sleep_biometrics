@@ -1,0 +1,16 @@
+.idea
+.vscode
+*.zip
+.DS_Store
+tmp/
+*.RAW
+*.csv
+*.parquet
+*.pyc
+__pycache__
+*.env
+/plots/*
+
+*.png
+*.pkl
+
