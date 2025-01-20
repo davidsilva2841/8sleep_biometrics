@@ -2,8 +2,8 @@ from bs4 import BeautifulSoup
 from urllib.request import urlretrieve
 import requests
 
-from toolkit.config import TEMP_FOLDER_PATH
-from toolkit.logger import get_logger
+from config import TEMP_FOLDER_PATH
+from logger import get_logger
 log = get_logger()
 
 

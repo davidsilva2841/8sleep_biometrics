@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import inspect
 
-from toolkit.logger import get_logger
+from logger import get_logger
 
 
 log = get_logger()
@@ -370,6 +370,11 @@ def get_parent_folder_name(file_path=None):
     else:
         file_path = inspect.stack()[1][1]
         return file_path.split('/')[-3:][0]
+
+
+def get_parent_folder_path(folder_path):
+    parent_folder = os.path.abspath(os.path.join(folder_path, os.pardir))
+    return parent_folder
 
 
 

@@ -2,8 +2,8 @@ import os
 import zipfile
 import shutil
 
-from toolkit.tools import files
-from toolkit.logger import get_logger
+from tools import files
+from logger import get_logger
 
 
 log = get_logger()

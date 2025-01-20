@@ -1,12 +1,15 @@
+import gc
 import math
 import time
 from datetime import datetime, timedelta
+import numpy as np
 from typing import Union, Tuple
 import heartpy as hp
 import statistics
-from src.data_types import *
-from toolkit import tools
-import traceback
+from data_types import *
+import tools
+from heart.filtering import filter_signal
+
 
 class Measurement(TypedDict):
     start_time: str
@@ -27,7 +30,16 @@ class RunData:
     df_pred_side_2: Union[None, pd.DataFrame]
     chart_info: dict
 
-    # def _load_piezo_df(self, piezo_df: pd.DataFrame):
+    def _load_piezo_df(self, piezo_df: pd.DataFrame):
+        # Convert start_time and end_time to datetime
+        start_time_dt = pd.to_datetime(self.start_time)
+        end_time_dt = pd.to_datetime(self.end_time)
+        # Load only the rows we need
+        self.piezo_df: pd.DataFrame = piezo_df.loc[start_time_dt:end_time_dt]
+        # self.piezo_df.loc[:, self.side_1] = self.piezo_df[self.side_1].apply(lambda x: hp.filter_signal(x, [0.05, 15], 500, filtertype='bandpass'))
+        # self.piezo_df.loc[:, self.side_2] = self.piezo_df[self.side_2].apply(lambda x: hp.filter_signal(x, [0.05, 15], 500, filtertype='bandpass'))
+        # self.piezo_df[self.side_1] = self.piezo_df[self.side_1].apply(lambda x: hp.filter_signal(x, [0.05, 15], 500, filtertype='bandpass'))
+        # self.piezo_df[self.side_2] = self.piezo_df[self.side_2].apply(lambda x: hp.filter_signal(x, [0.05, 15], 500, filtertype='bandpass'))
 
 
     def __init__(
@@ -41,13 +53,10 @@ class RunData:
             percentile: Tuple[int, int] = (1,99),
             moving_avg_size: int = 60,
             name: str = '',
-            side: str = 'right'
+            side: str = 'right',
+            sensor_count=2,
+            log=True,
     ):
-        # Convert start_time and end_time to datetime
-        start_time_dt = pd.to_datetime(start_time)
-        end_time_dt = pd.to_datetime(end_time)
-        # Load only the rows we need
-        self.piezo_df: pd.DataFrame = piezo_df.loc[start_time_dt:end_time_dt]
 
         # Parameters
         self.slide_by: int = slide_by                       # Sliding window step size in seconds
@@ -61,7 +70,10 @@ class RunData:
         self.side_2: str = f'{side}2'
         self.start_time: str = start_time                   # Start time in 'YYYY-MM-DD HH:MM:SS' format
         self.end_time: str = end_time                       # End time in 'YYYY-MM-DD HH:MM:SS' format
+        self.log = log
+        self.senor_count = sensor_count
 
+        self._load_piezo_df(piezo_df)
 
         # Running metrics
         self.heart_rates: List[float] = []                  # Store average heart rates
@@ -80,13 +92,13 @@ class RunData:
 
         # Define the interval
         self.start_interval = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
-        self.end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
+        self.end_datetime = datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
 
         window_time = timedelta(seconds=window)
         self.end_interval = self.start_interval + window_time
         self.slide_by_time = timedelta(seconds=slide_by)
 
-        total_seconds = (self.end_time - self.start_interval).total_seconds()
+        total_seconds = (self.end_datetime - self.start_interval).total_seconds()
         if total_seconds < 0:
             raise Exception(f'end_time is before start_time: {start_time} -> {end_time}')
 
@@ -98,6 +110,9 @@ class RunData:
         self.measurements_side_2 = []
         self.combined_measurements = []
         self.chart_info = {
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'name': self.name,
             'window': self.window,
             'slide_by': self.slide_by,
             'moving_avg_size': self.moving_avg_size,
@@ -120,6 +135,7 @@ class RunData:
             raise Exception("Timer was not started.")
         self.timer_end = time.time()
         self.elapsed_time = self.timer_end - self.timer_start
+        self.chart_info['elapsed'] = self.elapsed_time
         print(f"Timer stopped. Elapsed time: {self.elapsed_time:.2f} seconds.")
 
 
@@ -143,8 +159,9 @@ class RunData:
                 self.hr_std_2 = self.hr_std_range[1]
 
         self.i += 1
-        if self.i % self.progress_bar_update_interval == 0:
-            self.bar.update()
+        if self.log:
+            if self.i % self.progress_bar_update_interval == 0:
+                self.bar.update()
 
         self.start_interval += self.slide_by_time
         self.end_interval += self.slide_by_time
@@ -167,22 +184,23 @@ class RunData:
 
 
     def print_results(self):
-        print('-----------------------------------------------------------------------------------------------------')
-        print(f'Estimated heart rate for {self.name} {self.start_time} -> {self.end_time}')
-        print(f"Elapsed time: {self.elapsed_time:.2f} seconds.")
-        print(f"Sensor 1 - Dropped    {self.sensor_1_drop_count:,}/{self.total_intervals:,}  ({(self.sensor_1_drop_count / self.total_intervals) * 100:.2f}%)")
-        print(f"Sensor 1 - Errors     {self.sensor_1_error_count:,}/{self.total_intervals:,}  ({(self.sensor_1_error_count / self.total_intervals) * 100:.2f}%)")
-        sensor_1_predicted = self.total_intervals - self.sensor_1_error_count - self.sensor_1_drop_count
-        print(f"Sensor 1 - Predicted  {sensor_1_predicted:,}/{self.total_intervals:,}  ({(sensor_1_predicted / self.total_intervals) * 100:.2f}%)")
+        if self.log:
+            print('-----------------------------------------------------------------------------------------------------')
+            print(f'Estimated heart rate for {self.name} {self.start_time} -> {self.end_time}')
+            print(f"Elapsed time: {self.elapsed_time:.2f} seconds.")
+            print(f"Sensor 1 - Dropped    {self.sensor_1_drop_count:,}/{self.total_intervals:,}  ({(self.sensor_1_drop_count / self.total_intervals) * 100:.2f}%)")
+            print(f"Sensor 1 - Errors     {self.sensor_1_error_count:,}/{self.total_intervals:,}  ({(self.sensor_1_error_count / self.total_intervals) * 100:.2f}%)")
+            sensor_1_predicted = self.total_intervals - self.sensor_1_error_count - self.sensor_1_drop_count
+            print(f"Sensor 1 - Predicted  {sensor_1_predicted:,}/{self.total_intervals:,}  ({(sensor_1_predicted / self.total_intervals) * 100:.2f}%)")
 
-        print(f"Sensor 2 - Dropped: {self.sensor_2_drop_count:,}/{self.total_intervals:,}  ({(self.sensor_2_drop_count / self.total_intervals) * 100:.2f}%)")
-        print(f"Sensor 2 - Errors: {self.sensor_2_error_count:,}/{self.total_intervals:,}  ({(self.sensor_2_error_count / self.total_intervals) * 100:.2f}%)")
-        sensor_2_predicted = self.total_intervals - self.sensor_2_error_count - self.sensor_2_drop_count
-        print(f"Sensor 2 - Predicted  {sensor_2_predicted:,}/{self.total_intervals:,}  ({(sensor_2_predicted / self.total_intervals) * 100:.2f}%)")
+            print(f"Sensor 2 - Dropped: {self.sensor_2_drop_count:,}/{self.total_intervals:,}  ({(self.sensor_2_drop_count / self.total_intervals) * 100:.2f}%)")
+            print(f"Sensor 2 - Errors: {self.sensor_2_error_count:,}/{self.total_intervals:,}  ({(self.sensor_2_error_count / self.total_intervals) * 100:.2f}%)")
+            sensor_2_predicted = self.total_intervals - self.sensor_2_error_count - self.sensor_2_drop_count
+            print(f"Sensor 2 - Predicted  {sensor_2_predicted:,}/{self.total_intervals:,}  ({(sensor_2_predicted / self.total_intervals) * 100:.2f}%)")
 
-        print(f"Dropped b/ of percentile: {self.dropped_from_percentile:,}/{self.total_intervals:,}  ({(self.dropped_from_percentile / self.total_intervals) * 100:.2f}%)")
-        predicted_inverval_count = len(self.combined_measurements)
-        print(f"Total predicted: {predicted_inverval_count:,}/{self.total_intervals:,}  ({(predicted_inverval_count / self.total_intervals) * 100:.2f}%)")
+            print(f"Dropped b/ of percentile: {self.dropped_from_percentile:,}/{self.total_intervals:,}  ({(self.dropped_from_percentile / self.total_intervals) * 100:.2f}%)")
+            predicted_inverval_count = len(self.combined_measurements)
+            print(f"Total predicted: {predicted_inverval_count:,}/{self.total_intervals:,}  ({(predicted_inverval_count / self.total_intervals) * 100:.2f}%)")
 
 
     def combine_results(self):
@@ -250,7 +268,7 @@ def clean_df_pred(df_pred: pd.DataFrame) -> pd.DataFrame:
 def _calculate(run_data: RunData, side: str):
     np_array = np.concatenate(run_data.piezo_df[run_data.start_interval:run_data.end_interval][side])
 
-    data = hp.filter_signal(np_array, [0.05, 15], 500, filtertype='bandpass')
+    data = filter_signal(np_array, [0.05, 15], 500)
     data = hp.scale_data(data)
     working_data, measurement = hp.process(
         data,
@@ -285,7 +303,7 @@ def estimate_heart_rate_intervals(run_data: RunData):
     print(f'Estimating heart rate for {run_data.name} {run_data.start_time} -> {run_data.end_time}')
     # Convert strings to datetime objects
     run_data.start_timer()
-    while run_data.start_interval <= run_data.end_time:
+    while run_data.start_interval <= run_data.end_datetime:
         measurement_1 = None
         measurement_2 = None
         try:
@@ -294,43 +312,28 @@ def estimate_heart_rate_intervals(run_data: RunData):
             run_data.sensor_1_error_count += 1
             # traceback.print_exc()
 
-        try:
-            measurement_1 = _calculate(run_data, run_data.side_2)
-        except Exception as e:
-            run_data.sensor_2_error_count += 1
+        if run_data.senor_count == 2:
+            try:
+                measurement_2 = _calculate(run_data, run_data.side_2)
+            except Exception as e:
+                run_data.sensor_2_error_count += 1
 
         if measurement_1 is not None and measurement_2 is not None:
             run_data.measurements_side_1.append(measurement_1)
             run_data.measurements_side_2.append(measurement_2)
 
-            if np.isnan(m1_heart_rate) or np.isnan(m2_heart_rate):
-                print('-----------------------------------------------------------------------------------------------------')
-                print('DETECTED NAN!!!!')
             m1_heart_rate = measurement_1['heart_rate']
             m2_heart_rate = measurement_2['heart_rate']
-            if run_data.hr_moving_avg is not None and not np.isnan(m1_heart_rate) and not np.isnan(m2_heart_rate):
+            if run_data.hr_moving_avg is not None:
                 heart_rate = (((m1_heart_rate + m2_heart_rate) / 2) + run_data.hr_moving_avg) / 2
-            elif not np.isnan(m1_heart_rate) and not np.isnan(m2_heart_rate):
-                heart_rate = (m1_heart_rate + m2_heart_rate) / 2
-            elif not np.isnan(m1_heart_rate):
-                if run_data.hr_moving_avg is not None:
-                    heart_rate = (m1_heart_rate + run_data.hr_moving_avg) / 2
-                else:
-                    heart_rate = m1_heart_rate
-            elif not np.isnan(m2_heart_rate):
-                if run_data.hr_moving_avg is not None:
-                    heart_rate = (m2_heart_rate + run_data.hr_moving_avg) / 2
-                else:
-                    heart_rate = m2_heart_rate
             else:
-                heart_rate = m1_heart_rate
+                heart_rate = (m1_heart_rate + m2_heart_rate) / 2
 
-            if not np.isnan(heart_rate):
-                if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
-                    if heart_rate < run_data.hr_moving_avg:
-                        heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
-                    else:
-                        heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
+            if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
+                if heart_rate < run_data.hr_moving_avg:
+                    heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
+                else:
+                    heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
                 run_data.heart_rates.append(heart_rate)
 
@@ -347,20 +350,18 @@ def estimate_heart_rate_intervals(run_data: RunData):
             run_data.sensor_2_drop_count += 1
             m1_heart_rate = measurement_1['heart_rate']
 
-            if run_data.hr_moving_avg is not None and not np.isnan(m1_heart_rate):
+            if run_data.hr_moving_avg is not None:
                 heart_rate = (m1_heart_rate + run_data.hr_moving_avg) / 2
             else:
                 heart_rate = m1_heart_rate
 
+            if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
+                if heart_rate < run_data.hr_moving_avg:
+                    heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
+                else:
+                    heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
-            if not np.isnan(heart_rate):
-                if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
-                    if heart_rate < run_data.hr_moving_avg:
-                        heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
-                    else:
-                        heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
-
-                run_data.heart_rates.append(heart_rate)
+            run_data.heart_rates.append(heart_rate)
 
             measurement_1['heart_rate'] = heart_rate
             run_data.combined_measurements.append(measurement_1)
@@ -369,17 +370,16 @@ def estimate_heart_rate_intervals(run_data: RunData):
             run_data.sensor_1_drop_count += 1
             m2_heart_rate = measurement_2['heart_rate']
 
-            if run_data.hr_moving_avg is not None and not np.isnan(m2_heart_rate):
+            if run_data.hr_moving_avg is not None:
                 heart_rate = (m2_heart_rate + run_data.hr_moving_avg) / 2
             else:
                 heart_rate = m2_heart_rate
 
-            if not np.isnan(heart_rate):
-                if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
-                    if heart_rate < run_data.hr_moving_avg:
-                        heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
-                    else:
-                        heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
+            if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
+                if heart_rate < run_data.hr_moving_avg:
+                    heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
+                else:
+                    heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
                 run_data.heart_rates.append(heart_rate)
 
@@ -392,6 +392,8 @@ def estimate_heart_rate_intervals(run_data: RunData):
     run_data.stop_timer()
     run_data.print_results()
     run_data.combine_results()
+    gc.collect()
+
 
 
 

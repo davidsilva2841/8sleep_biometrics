@@ -14,3 +14,6 @@ __pycache__
 *.png
 *.pkl
 
+._.DS_Store
+/src/test/**/*.json
+

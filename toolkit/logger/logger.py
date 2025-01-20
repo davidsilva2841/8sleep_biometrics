@@ -86,7 +86,7 @@ def _build_logger(logger):
     logger.addHandler(_get_file_handler(file_path))
     logger.addHandler(_get_console_handler())
     logger.debug(f'Log file available @ {file_path}')
-
+    #
     sys.excepthook = _handle_exception
 
 

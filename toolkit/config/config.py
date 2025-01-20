@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-PROJECT_FOLDER_PATH = str(Path(__file__).parents[3]) + '/'
+PROJECT_FOLDER_PATH = str(Path(__file__).parents[2]) + '/'
 DB_FOLDER_PATH = PROJECT_FOLDER_PATH + 'python/lab/'
 TEMP_FOLDER_PATH = PROJECT_FOLDER_PATH + 'python/temp/'
 

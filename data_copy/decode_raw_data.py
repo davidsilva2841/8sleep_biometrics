@@ -1,7 +1,10 @@
-import tools
-from data_types import *
+import sys
+import os
 from datetime import datetime, timezone
 import cbor2
+import argparse
+import numpy as np
+import pandas as pd
 
 
 
@@ -24,19 +27,18 @@ def _load_piezo_row(data: dict, file_path: str, seq: int):
     except Exception as error:
         print('-----------------------------------------------------------------------------------------------')
         print(f'Error decoding piezo data | file_path: {file_path} | seq: {seq}')
-        print(f'raw_v2.py:54 data: {data}')
         print(error)
         raise error
 
 
-def _decode_cbor_file(file_path: str, data: Data, piezo_only: bool):
+def _decode_cbor_file(file_path: str, data, piezo_only: bool):
     print(f'Loading cbor data from: {file_path}')
 
     with open(file_path, 'rb') as raw_data:
         while True:
             try:
                 # Decode the next CBOR object
-                row: RawRow = cbor2.load(raw_data)
+                row = cbor2.load(raw_data)
                 decoded_data = cbor2.loads(row['data'])
                 if decoded_data['type'] == 'piezo-dual':
                     # piezo-dual rows have nested bytes we need to decode
@@ -65,7 +67,7 @@ def _decode_cbor_file(file_path: str, data: Data, piezo_only: bool):
     return data
 
 
-def _rename_keys(data: dict) -> Data:
+def _rename_keys(data: dict):
     key_mapping = {
         'log': 'logs',
         'piezo-dual': 'piezo_dual',
@@ -79,14 +81,36 @@ def _rename_keys(data: dict) -> Data:
     return renamed_data
 
 
-def load_raw_data(folder_path=None, file_path=None, piezo_only: bool = False) -> Data:
+def list_dir_tree(root_folder, files_only=False):
+    if not os.path.isdir(root_folder):
+        raise Exception("Folder doesn't exist")
+
+    subfile_paths = []
+    for root, folders, files in os.walk(root_folder):
+        if not files_only:
+            subfile_paths.append(root)
+        for file in files:
+            file_path = os.path.join(root, file)
+            if files_only:
+                if os.path.isfile(file_path):
+                    subfile_paths.append(file_path)
+            else:
+                subfile_paths.append(file_path)
+
+    return subfile_paths
+
+
+def load_raw_data(folder_path=None, file_path=None, piezo_only: bool = False):
     if folder_path:
-        files = tools.list_dir_tree(folder_path, files_only=True)
+        files = list_dir_tree(folder_path, files_only=True)
     elif file_path:
         files = [file_path]
     else:
         raise TypeError("'folder_path' or 'file_path' must be present")
 
+    if len(files) == 0:
+        print(f'No raw files found in: {folder_path}, double check your from folder path')
+    print(f'Decoding {len(files)} file(s)...')
     data = {
         'log': [],
         'piezo-dual': [],
@@ -100,8 +124,26 @@ def load_raw_data(folder_path=None, file_path=None, piezo_only: bool = False) ->
         if not file.endswith('.DS_Store') and not file.endswith('SEQNO.RAW') and file.endswith('.RAW'):
             _decode_cbor_file(file, data, piezo_only)
 
+    print(f'Decoded {len(files)} file(s)')
     data = _rename_keys(data)
     return data
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Copy all files from a source folder to a destination folder.")
+    parser.add_argument("from_folder", type=str, help="Path to the source folder")
+    parser.add_argument("to_folder", type=str, help="Path to the destination folder")
+    # If no arguments provided, show a friendly message
+    if len(sys.argv) == 1:
+        parser.print_help()
+        print("\nExample usage:")
+        print("  python script.py /path/data/raw/ /path/to/save_output")
+        sys.exit(1)
+    args = parser.parse_args()
+    data = load_raw_data(folder_path=args.from_folder, piezo_only=True)
+    df = pd.DataFrame(data['piezo_dual'])
+    file_path = os.path.join(args.to_folder, 'output.pkl.zip')
+    print(f'Saving data to file...')
+    df.to_pickle(file_path, compression='zip')
+    print(f'Saved file, please share {file_path}')
 

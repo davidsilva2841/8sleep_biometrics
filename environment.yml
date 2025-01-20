@@ -1,0 +1,14 @@
+name: biometrics
+channels:
+  - defaults
+dependencies:
+  - python=3.13
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - psutil
+  - pytz
+  - pyarrow
+prefix: /opt/anaconda3/envs/biometrics

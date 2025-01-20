@@ -1,7 +1,7 @@
 import pandas as pd
 
-from src.data_manager import DataManager
-from src.analyze import analyze_predictions
+from data_manager import DataManager
+from analyze import analyze_predictions
 
 
 # Period 1

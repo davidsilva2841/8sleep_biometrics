@@ -3,7 +3,7 @@ from datetime import date as datetime_date
 from datetime import timedelta
 import re
 
-from toolkit.logger import get_logger
+from logger import get_logger
 
 
 log = get_logger()

@@ -12,6 +12,8 @@ SLEEP_DATA_TYPE = dict[str, SleepEntry]
 
 SLEEP_DATA = {
     'david': {
+        'validation_format': 'apple_watch',
+        'sensor_count': 2,
         'sleep_periods': [
             {'start_time': '2025-01-10 08:00:00', 'end_time': '2025-01-10 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-12 08:00:00', 'end_time': '2025-01-12 15:00:00', 'side': 'right'},
@@ -25,10 +27,26 @@ SLEEP_DATA = {
         ]
     },
     'tally': {
+        'validation_format': 'apple_watch',
+        'sensor_count': 2,
         'sleep_periods': [
             {'start_time': '2025-01-14 06:30:00', 'end_time': '2025-01-14 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-18 06:30:00', 'end_time': '2025-01-18 13:30:00', 'side': 'right'},
             {'start_time': '2025-01-19 06:30:00', 'end_time': '2025-01-19 13:30:00', 'side': 'right'},
+        ]
+    },
+    'trinity': {
+        'validation_format': 'apple_watch',
+        'sensor_count': 1,
+        'sleep_periods': [
+            {'start_time': '2025-01-20 03:06:00', 'end_time': '2025-01-20 08:51:00', 'side': 'left'},
+        ]
+    },
+    'den': {
+        'validation_format': 'polar',
+        'sensor_count': 1,
+        'sleep_periods': [
+            {'start_time': '2025-01-20 00:36:00', 'end_time': '2025-01-20 08:49:00', 'side': 'right'},
         ]
     }
 }

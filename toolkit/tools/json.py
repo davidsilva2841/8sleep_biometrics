@@ -1,7 +1,7 @@
 import json
 
-from toolkit.tools import files, arrays
-from toolkit.logger import get_logger
+from tools import files, arrays
+from logger import get_logger
 
 
 log = get_logger()
