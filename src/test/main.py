@@ -48,9 +48,6 @@ def run_prediction(param_groups):
         if params['slide_by'] >= params['window']:
             continue
 
-        # tally = DataManager('tally', load=True)
-        # david = DataManager('david', load=True)
-
         for data in data_managers:
             for period in data.sleep_periods:
                 start_time = period['start_time']

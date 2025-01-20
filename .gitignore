@@ -13,6 +13,7 @@ __pycache__
 
 *.png
 *.pkl
+*.feather
 
 ._.DS_Store
 /src/test/**/*.json

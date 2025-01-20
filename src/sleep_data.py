@@ -1,16 +1,22 @@
-from typing import TypedDict, List
+from typing import TypedDict, List, Literal, Dict
+
 
 class TimePeriod(TypedDict):
     start_time: str
     end_time: str
-    side: str
+    side: Literal['left', 'right']
+
+ValidationFormat = Literal['apple_watch', 'polar']
 
 class SleepEntry(TypedDict):
     sleep_periods: List[TimePeriod]
+    sensor_count: Literal[1, 2]
+    validation_format: ValidationFormat
 
-SLEEP_DATA_TYPE = dict[str, SleepEntry]
 
-SLEEP_DATA = {
+SleepDataType = Dict[str, SleepEntry]
+
+SLEEP_DATA: SleepDataType = {
     'david': {
         'validation_format': 'apple_watch',
         'sensor_count': 2,
@@ -24,6 +30,7 @@ SLEEP_DATA = {
             {'start_time': '2025-01-17 07:00:00', 'end_time': '2025-01-17 12:45:00', 'side': 'right'},
             {'start_time': '2025-01-18 07:10:00', 'end_time': '2025-01-18 14:20:00', 'side': 'right'},
             {'start_time': '2025-01-19 08:06:00', 'end_time': '2025-01-19 15:44:00', 'side': 'right'},
+            {'start_time': '2025-01-20 07:36:00', 'end_time': '2025-01-20 14:50:00', 'side': 'right'},
         ]
     },
     'tally': {

@@ -4,6 +4,7 @@ from calculations import RunData
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import MaxNLocator
 import traceback
+from typing import Union, Tuple, TypedDict, Literal, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +13,36 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from config import PROJECT_FOLDER_PATH
 
 from data_manager import DataManager
+from run_data import ChartInfo
+# ---------------------------------------------------------------------------------------------------
+
+EvaluationMetric = Literal['heart_rate', 'hrv', 'sleep_stage', 'breathing_rate']
+
+class AccuracyMetrics(TypedDict):
+    corr: str
+    mae: float
+    mse: float
+    mape: str
+    rmse: float
+
+
+class StatisticalMetrics(TypedDict):
+    mean: float
+    std: float
+    min: float
+    max: float
+
+
+class EvaluationMetrics(TypedDict):
+    accuracy: AccuracyMetrics
+    statistics: StatisticalMetrics
+
+
+class Results(TypedDict):
+    heart_rate: Optional[EvaluationMetrics]
+    hrv: Optional[EvaluationMetrics]
+    sleep_stage: Optional[EvaluationMetrics]
+    breathing_rate: Optional[EvaluationMetrics]
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -23,8 +54,8 @@ def _plot_validation_data(
         end_time: str,
         data: DataManager,
         estimated_df: pd.DataFrame = None,
-        info: dict = None,
-        stats_json: dict=None,
+        chart_info: ChartInfo = None,
+        results: Results=None,
 ):
     try:
         # -------------------------------------------------------------------------
@@ -61,9 +92,9 @@ def _plot_validation_data(
             _df.set_index(time_col, inplace=True)
             # Sort by the index so resample can work properly
             _df.sort_index(inplace=True)
-            # _df = _df[~_df.index.duplicated(keep='first')]
+            _df = _df[~_df.index.duplicated(keep='first')]
             # Resample and forward fill
-            # _df = _df.resample(freq).ffill()
+            _df = _df.resample(freq).ffill()
             return _df
 
         # -------------------------------------------------------------------------
@@ -81,10 +112,7 @@ def _plot_validation_data(
         }
         sleep_df_copy = data.sleep_df.copy()
         sleep_df_copy['sleep_stage_actual'] = sleep_df_copy['sleep_stage_actual'].map(sleep_stage_map)
-        sleep_resampled = resample_df_sleep(
-            sleep_df_copy,
-            time_col='start_time',
-        )
+        sleep_resampled = resample_df_sleep(sleep_df_copy, time_col='start_time')
 
         # --------------------------------------- ----------------------------------
         # 3. Clip/respect the specified start/end times
@@ -131,7 +159,7 @@ def _plot_validation_data(
         # Plot 1: Breath Rate
         axes[0].plot(
             breath_rate_resampled.index,
-            breath_rate_resampled['breath_rate_actual'],
+            breath_rate_resampled['breathing_rate_actual'],
             color='#f44336',
             label='Breathing Rate',
             linewidth=4
@@ -239,21 +267,32 @@ def _plot_validation_data(
         fig.subplots_adjust(bottom=0.20)  # Leave space at the bottom
 
         # Add JSON stats at the bottom
-        if stats_json is not None:
-            stats_text = "\n".join(f"{key}: {value}" for key, value in stats_json.items())
+
+        if chart_info is not None:
+            labels = "INFO\n" + "\n".join(f"{key.ljust(11)}: {value}" for key, value in chart_info['labels'].items())
             fig.text(
-                0.5, 0.15, # Position: x, y (centered horizontally below the chart)
+                0.01, 0.15, # Position: x, y (centered horizontally below the chart)
+                labels,
+                ha='left', va='top', fontsize=16, family='monospace'
+            )
+            labels = "RUNTIME PARAMETERS\n" + "\n".join(f"{key.ljust(14)}: {value}" for key, value in chart_info['runtime_params'].items())
+            fig.text(
+                0.30, 0.15, # Position: x, y (centered horizontally below the chart)
+                labels,
+                ha='left', va='top', fontsize=16, family='monospace'
+            )
+        if results is not None:
+            accuracy = results['heart_rate']['accuracy']
+            stats_text = "HEART RATE ACCURACY\n" + "\n".join(f"{key.ljust(6)}: {value}" for key, value in accuracy.items())
+            fig.text(
+                0.50, 0.15, # Position: x, y (centered horizontally below the chart)
                 stats_text,
-                ha='left', va='top', fontsize=12, family='monospace'
+                ha='left', va='top', fontsize=16, family='monospace'
             )
-        if info is not None:
-            info_text = "\n".join(f"{key}: {value}" for key, value in info.items())
-            fig.text(
-                0.25, 0.15, # Position: x, y (centered horizontally below the chart)
-                info_text,
-                ha='left', va='top', fontsize=12, family='monospace'
-            )
-        file_name = f'{end_time[:10]}_{info["name"]}_mae_{stats_json["mae"]}_corr_{stats_json["corr"]}_mape_{stats_json["mape"]}.png'
+
+        mae = results["heart_rate"]['accuracy']["mae"]
+        corr = results["heart_rate"]['accuracy']["mae"]
+        file_name = f'{data.name}_{end_time[:10]}_mae_{mae}_corr_{corr}.png'
         save_path = f'{PROJECT_FOLDER_PATH}raw/plots/dump/{file_name}'
         plt.savefig(save_path, bbox_inches="tight", dpi=300)
         plt.show(block=False)
@@ -267,59 +306,81 @@ def _plot_validation_data(
 # ---------------------------------------------------------------------------------------------------
 # region ANALYZE
 
-def split_df_by_source(df_pred: pd.DataFrame, column: str):
-    unique_values = df_pred[column].unique()
-    df_dict = {value: df_pred[df_pred[column] == value].copy() for value in unique_values}
-    return df_dict
 
 
-def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, run_data: RunData, plot=True):
-    df_pred.sort_values(by=['source', 'start_time'], inplace=True)
-    df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
-    df_pred['end_time'] = pd.to_datetime(df_pred['end_time'])
-    df_pred['mid_time'] = df_pred['start_time']
-    df_dict = split_df_by_source(df_pred, 'source')
 
-    data.heart_rate_df['start_time'] = pd.to_datetime(data.heart_rate_df['start_time'])
-    column = 'heart_rate'
 
-    # Compute the midpoint of start_time and end_time
-    results = {}
-    for source, split_df in df_dict.items():
-        split_df.dropna(subset=[column], inplace=True)
-        split_df_merged = pd.merge_asof(
+def _calculate_accuracy(data: DataManager, df_pred: pd.DataFrame, column: EvaluationMetric) -> Union[EvaluationMetrics, {}]:
+    if column == 'heart_rate':
+        df_merged = pd.merge_asof(
             data.heart_rate_df,
-            split_df,
+            df_pred,
             left_on='start_time',
-            right_on='mid_time',
+            right_on='start_time',
             direction='nearest',
             tolerance=pd.Timedelta('30s')
         )
-        split_df_merged.dropna(subset=[column], inplace=True)
-
-        pre_merge_count = split_df.shape[0]
-        post_merge_count = split_df_merged.shape[0]
-
-        results[source] = {
-            'mean': round(split_df_merged[column].mean(), 2),
-            'std': round(split_df_merged[column].std(), 2),
-            'min': round(split_df_merged[column].min(), 2),
-            'max': round(split_df_merged[column].max(), 2),
-            'corr': f'{round(split_df_merged['heart_rate_actual'].corr(split_df_merged['heart_rate']), 2) * 100:.2f}%',
-            'mae': round(mean_absolute_error(split_df_merged['heart_rate_actual'], split_df_merged['heart_rate']), 2),
-            'mse': round(mean_squared_error(split_df_merged['heart_rate_actual'], split_df_merged['heart_rate']), 2),
-            'mape': f"{round(np.mean(np.abs((split_df_merged['heart_rate_actual'] - split_df_merged['heart_rate']) / split_df_merged['heart_rate_actual'])) * 100, 2)}%",
-            'rmse': round(np.sqrt(mean_squared_error(split_df_merged['heart_rate_actual'], split_df_merged['heart_rate'])), 2),
-            'pre_merge_count': pre_merge_count,
-            'post_merge_count': post_merge_count,
+    elif column == 'breathing_rate':
+        df_merged = pd.merge_asof(
+            data.breath_rate_df,
+            df_pred,
+            left_on='start_time',
+            right_on='start_time',
+            direction='nearest',
+            tolerance=pd.Timedelta('30s')
+        )
+    elif column == 'hrv':
+        df_merged = pd.merge_asof(
+            data.hrv_df,
+            df_pred,
+            left_on='start_time',
+            right_on='start_time',
+            direction='nearest',
+            tolerance=pd.Timedelta('30s')
+        )
+    else:
+        return
+    actual_column_name = f'{column}_actual'
+    df_merged.dropna(subset=[column], inplace=True)
+    if df_merged.shape[0] == 0:
+        return {}
+    res = {
+        'statistics': {
+            'mean': round(df_merged[column].mean(), 2),
+            'std': round(df_merged[column].std(), 2),
+            'min': round(df_merged[column].min(), 2),
+            'max': round(df_merged[column].max(), 2),
+        },
+        'accuracy': {
+            'corr': f'{round(df_merged[actual_column_name].corr(df_merged[column]), 2) * 100:.2f}%',
+            'mape': f"{round(np.mean(np.abs((df_merged[actual_column_name] - df_merged[column]) / df_merged[actual_column_name])) * 100, 2)}%",
+            'mae': round(mean_absolute_error(df_merged[actual_column_name], df_merged[column]), 2),
+            'rmse': round(np.sqrt(mean_squared_error(df_merged[actual_column_name], df_merged[column])), 2),
+            'mse': round(mean_squared_error(df_merged[actual_column_name], df_merged[column]), 2),
         }
-        if plot:
-            print(json.dumps(results, indent=4))
-            _plot_validation_data(run_data.start_time, run_data.end_time, data, split_df, run_data.chart_info, results[source])
+    }
+    del df_merged
+    gc.collect()
+    return res
 
-        del df_dict
-        gc.collect()
-        return results[source]
+
+
+def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, run_data: RunData, plot=True):
+    df_pred.sort_values(by=['start_time'], inplace=True)
+    df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
+    columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'breathing_rate']
+    # df_dict = split_df_by_source(df_pred, 'source')
+    results: Results = {}
+    for column in columns:
+        results[column] = _calculate_accuracy(data, df_pred, column)
+
+    if plot:
+        _plot_validation_data(run_data.start_time, run_data.end_time, data, df_pred, run_data.chart_info, results=results)
+        print(json.dumps(results, indent=4))
+
+
+    gc.collect()
+    return results
 
 
 # endregion

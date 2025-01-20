@@ -131,7 +131,7 @@ def _update_breath_rate(file_path, output_path):
     new_df.rename({
         'startDate': 'start_time',
         'endDate': 'end_time',
-        'value': 'breath_rate_actual'
+        'value': 'breathing_rate_actual'
     }, axis=1, inplace=True)
 
     if os.path.isfile(output_path):
@@ -163,7 +163,7 @@ class DataManager:
         self.validation_folder: str = f'{self.folder_path}validation/'
         self.name = name
 
-        self.piezo_df_file_path: str = f'{self.raw_folder}{name}_piezo_df.parquet'
+        self.piezo_df_file_path: str = f'{self.raw_folder}{name}_piezo_df.feather'
         self.heart_rate_file_path: str = f'{self.validation_folder}{name}_heart_rate.csv'
         self.breath_rate_file_path: str = f'{self.validation_folder}{name}_breath_rate.csv'
         self.hrv_file_path: str = f'{self.validation_folder}{name}_hrv.csv'
@@ -180,10 +180,11 @@ class DataManager:
             self.breath_rate_df: pd.DataFrame = pd.read_csv(self.breath_rate_file_path)
             self.hrv_df: pd.DataFrame = pd.read_csv(self.hrv_file_path)
             self.sleep_df: pd.DataFrame = pd.read_csv(self.sleep_data_file_path)
-            # self.heart_rate_df.sort_values(by='start_time', inplace=True)
-            # self.breath_rate_df.sort_values(by='start_time', inplace=True)
-            # self.hrv_df.sort_values(by='start_time', inplace=True)
-            # self.sleep_df.sort_values(by='start_time', inplace=True)
+
+            self.heart_rate_df['start_time'] = pd.to_datetime(self.heart_rate_df['start_time'])
+            self.breath_rate_df['start_time'] = pd.to_datetime(self.breath_rate_df['start_time'])
+            self.hrv_df['start_time'] = pd.to_datetime(self.hrv_df['start_time'])
+            self.sleep_df['start_time'] = pd.to_datetime(self.sleep_df['start_time'])
 
 
         if load and not new:

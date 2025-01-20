@@ -5,34 +5,41 @@ from data_manager import DataManager
 from calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
 from analyze import analyze_predictions
 import warnings
+
+from run_data import RuntimeParams
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 import pandas as pd
-df = pd.read_pickle('/Users/ds/main/8sleep_biometrics/data_copy/output.pkl.zip')
-def hash_dict(result):
-    return hash(frozenset(result.items()))
 
 def main():
     tally = DataManager('tally', load=True)
     david = DataManager('david', load=True)
+    david.load_new_raw_data()
+    david.load_new_validation_data()
+
     trinity = DataManager('trinity', load=True)
-    data = trinity
+    david = DataManager('david', load=True)
+    data = david
     period = data.sleep_periods[-1]
     for period in data.sleep_periods:
         start_time = period['start_time']
         end_time = period['end_time']
 
+        runtime_params: RuntimeParams = {
+            'window': 15,
+            'slide_by': 1,
+            'moving_avg_size': 30,
+            'hr_std_range': (1,15),
+            'percentile': (2, 98),
+        }
         run_data = RunData(
             data.piezo_df,
             start_time,
             end_time,
-            slide_by=1,
-            window=15,
-            hr_std_range=(1,15),
-            percentile=(2,98),
-            moving_avg_size=30,
+            runtime_params=runtime_params,
             name=data.name,
             side=period['side'],
             sensor_count=data.sensor_count,
@@ -52,12 +59,12 @@ def main():
         df_pred['breathing_rate'] = df_pred['breathing_rate'].rolling(window=40, min_periods=10).mean()
         df_pred['hrv'] = df_pred['hrv'].rolling(window=40, min_periods=10).mean()
 
-        run_data.chart_info['r_window_avg'] = r_window_avg
-        run_data.chart_info['r_min_periods'] = r_window_avg
-        run_data.chart_info['label'] = 'new'
+        # run_data.chart_info['r_window_avg'] = r_window_avg
+        # run_data.chart_info['r_min_periods'] = r_window_avg
+        # run_data.chart_info['label'] = 'new'
 
         run_data.print_results()
-        results = analyze_predictions(data, df_pred, run_data)
+        results = analyze_predictions(data, df_pred, run_data, plot=True)
 
 
         df = pd.read_pickle('/Users/ds/main/8sleep_biometrics/data/people/den/raw/load/2025-01-20.pkl.zip')
