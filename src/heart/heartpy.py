@@ -28,28 +28,6 @@ from src.heart.analysis import calc_rr, calc_rr_segment, clean_rr_intervals, cal
 from src.heart import config
 config.init() #initialize global conf vars
 
-__all__ = ['enhance_peaks',
-           'enhance_ecg_peaks',
-           'get_data',
-           'get_samplerate_mstimer',
-           'get_samplerate_datetime',
-           'hampel_correcter',
-           'hampel_filter',
-           'load_exampledata',
-           'plotter',
-           'plot_breathing',
-           'plot_poincare',
-           'process',
-           'process_rr',
-           'process_segmentwise',
-           'flip_signal',
-           'remove_baseline_wander',
-           'scale_data',
-           'scale_sections',
-           'segment_plotter',
-           'smooth_signal',
-           'filter_signal',
-           'run_tests']
 
 
 def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
@@ -173,104 +151,23 @@ def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
     measures : dict
         dictionary object used by heartpy to store computed measures.
 
-    Examples
-    --------
-    There's example data included in HeartPy to help you get up to speed. Here are
-    provided two examples of how to approach heart rate analysis.
-
-    The first example contains noisy sections and comes with a timer column that
-    counts miliseconds since start of recording.
-
-    >>> import heartpy as hp
-    >>> data, timer = hp.load_exampledata(1)
-    >>> sample_rate = hp.get_samplerate_mstimer(timer)
-    >>> '%.3f' %sample_rate
-    '116.996'
-
-    The sample rate is one of the most important characteristics during the
-    heart rate analysis, as all measures are relative to this.
-
-    With all data loaded and the sample rate determined, analysis is now easy:
-
-    >>> wd, m = hp.process(data, sample_rate = sample_rate)
-
-    The measures ('m') dictionary returned contains all determined measures
-
-    >>> '%.3f' %m['bpm']
-    '62.376'
-    >>> '%.3f' %m['rmssd']
-    '57.070'
-
-    Using a slightly longer example:
-
-    >>> data, timer = hp.load_exampledata(2)
-    >>> print(timer[0])
-    2016-11-24 13:58:58.081000
-
-    As you can see something is going on here: we have a datetime-based timer.
-    HeartPy can accomodate this and determine sample rate nontheless:
-
-    >>> sample_rate = hp.get_samplerate_datetime(timer, timeformat = '%Y-%m-%d %H:%M:%S.%f')
-    >>> '%.3f' %sample_rate
-    '100.420'
-
-    Now analysis can proceed. Let's also compute frequency domain data and interpolate clipping.
-    In this segment the clipping is visible around amplitude 980 so let's set that as well:
-
-    >>> data, timer = hp.load_exampledata(1)
-    >>> sample_rate = hp.get_samplerate_mstimer(timer)
-    >>> wd, m = hp.process(data, sample_rate = sample_rate, calc_freq = True,
-    ... interp_clipping = True, interp_threshold = 975)
-    >>> '%.3f' %m['bpm']
-    '62.376'
-    >>> '%.3f' %m['rmssd']
-    '57.070'
-    >>> '%.3f' %m['lf/hf']
-    '1.090'
-
-    High precision mode will upsample 200ms of data surrounding detected peak
-    and attempt to estimate the peak's real position with higher accuracy.
-    Use high_precision_fs to set the virtual sample rate to which the peak
-    will be upsampled (e.g. 1000Hz gives an estimated 1ms accuracy)
-
-    >>> wd, m = hp.process(data, sample_rate = sample_rate, calc_freq = True,
-    ... high_precision = True, high_precision_fs = 1000.0)
-
-    Finally setting reject_segmentwise will reject segments with more than 30% rejected beats
-    See check_binary_quality in the peakdetection.py module.
-
-    >>> wd, m = hp.process(data, sample_rate = sample_rate, calc_freq = True,
-    ... reject_segmentwise = True)
-
-    Final test for code coverage, let's turn all bells and whistles on that haven't been
-    tested yet
-
-    >>> wd, m = hp.process(data, sample_rate = 100.0, calc_freq = True,
-    ... interp_clipping = True, clipping_scale = True, reject_segmentwise = True, clean_rr = True)
     '''
 
     #initialize dicts if needed
-    if measures == None:
-        measures = {}
+    measures = {}
 
-    if working_data == None:
-        working_data = {}
-
-    if sys.version_info[0] >= 3 and sys.version_info[1] >= 3:
-        #if python >= 3.3
-        t1 = time.perf_counter()
-    else:
-        t1 = time.clock()
+    working_data = {}
 
 
-    assert np.asarray(hrdata).ndim == 1, 'error: multi-dimensional data passed to process() \
-function. Please supply a 1d array or list containing heart rate signal data. \n\nDid you perhaps \
-include an index column?'
 
-    if interp_clipping:
-        if clipping_scale:
-            hrdata = scale_data(hrdata)
-        hrdata = interpolate_clipping(hrdata, sample_rate, threshold=interp_threshold)
+#     assert np.asarray(hrdata).ndim == 1, 'error: multi-dimensional data passed to process() \
+# function. Please supply a 1d array or list containing heart rate signal data. \n\nDid you perhaps \
+# include an index column?'
+
+    # if interp_clipping:
+    #     if clipping_scale:
+    #         hrdata = scale_data(hrdata)
+    #     hrdata = interpolate_clipping(hrdata, sample_rate, threshold=interp_threshold)
 
     if hampel_correct: # pragma: no cover
         hrdata = enhance_peaks(hrdata)
@@ -289,17 +186,17 @@ include an index column?'
     working_data = fit_peaks(hrdata, rol_mean, sample_rate, bpmmin=bpmmin,
                              bpmmax=bpmmax, working_data=working_data)
 
-    if high_precision:
-        working_data = interpolate_peaks(hrdata, working_data['peaklist'], sample_rate=sample_rate,
-                                         desired_sample_rate=high_precision_fs, working_data=working_data)
+    # if high_precision:
+    #     working_data = interpolate_peaks(hrdata, working_data['peaklist'], sample_rate=sample_rate,
+    #                                      desired_sample_rate=high_precision_fs, working_data=working_data)
 
     working_data = calc_rr(working_data['peaklist'], sample_rate, working_data=working_data)
 
     working_data = check_peaks(working_data['RR_list'], working_data['peaklist'], working_data['ybeat'],
                                reject_segmentwise, working_data=working_data)
 
-    if clean_rr:
-        working_data = clean_rr_intervals(working_data, method = clean_rr_method)
+    # if clean_rr:
+    working_data = clean_rr_intervals(working_data, method = clean_rr_method)
 
     working_data, measures = calc_ts_measures(working_data['RR_list_cor'], working_data['RR_diff'],
                                               working_data['RR_sqdiff'], measures=measures,
@@ -314,16 +211,11 @@ include an index column?'
     except:
         measures['breathingrate'] = np.nan
 
-    if calc_freq:
-        working_data, measures = calc_fd_measures(method=freq_method, welch_wsize=240, square_spectrum=freq_square,
-                                                  measures=measures, working_data=working_data)
+    # if calc_freq:
+    #     working_data, measures = calc_fd_measures(method=freq_method, welch_wsize=240, square_spectrum=freq_square,
+    #                                               measures=measures, working_data=working_data)
 
     #report time if requested. Exclude from tests, output is untestable.
-    if report_time: # pragma: no cover
-        if sys.version_info[0] >= 3 and sys.version_info[1] >= 3:
-            print('\nFinished in %.8s sec' %(time.perf_counter()-t1))
-        else:
-            print('\nFinished in %.8s sec' %(time.clock()-t1))
 
     return working_data, measures
 
