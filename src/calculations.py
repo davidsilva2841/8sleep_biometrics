@@ -1,10 +1,11 @@
 import gc
 from run_data import RunData
 
-import heartpy as hp
+# import heartpy as hp
 from data_types import *
 from heart.filtering import filter_signal
-
+from heart.preprocessing import scale_data
+from heart.heartpy import process
 
 # ---------------------------------------------------------------------------------------------------
 # region CLEAN DF
@@ -57,16 +58,16 @@ def clean_df_pred(df_pred: pd.DataFrame) -> pd.DataFrame:
 def _calculate(run_data: RunData, side: str):
     np_array = np.concatenate(run_data.piezo_df[run_data.start_interval:run_data.end_interval][side])
 
-    data = filter_signal(np_array, [0.05, 15], 500)
-    data = hp.scale_data(data)
-    working_data, measurement = hp.process(
+    data = filter_signal(np_array, [0.05, 15], 500, filtertype='bandpass')
+    data = scale_data(data)
+    working_data, measurement = process(
         data,
         500,
         freq_method='fft',
         breathing_method='fft',
         bpmmin=40,
-        hampel_correct=False,     # KEEP FALSE - Takes too long
         bpmmax=90,
+        hampel_correct=False,     # KEEP FALSE - Takes too long
         reject_segmentwise=False, # KEEP FALSE - Less accurate
         windowsize=0.5,
         clipping_scale=False,     # KEEP FALSE - Did not change reading

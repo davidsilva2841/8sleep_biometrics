@@ -29,11 +29,11 @@ def main():
         end_time = period['end_time']
 
         runtime_params: RuntimeParams = {
-            'window': 15,
+            'window': 10,
             'slide_by': 1,
-            'moving_avg_size': 30,
-            'hr_std_range': (1,15),
-            'percentile': (2, 98),
+            'moving_avg_size': 60,
+            'hr_std_range': (1,6),
+            'percentile': (15, 85),
         }
         run_data = RunData(
             data.piezo_df,
@@ -51,8 +51,8 @@ def main():
         df_pred = run_data.df_pred.copy()
         df_pred = clean_df_pred(df_pred)
 
-        r_window_avg = 15
-        r_min_periods = 5
+        r_window_avg = 20
+        r_min_periods = 20
 
         df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
 
