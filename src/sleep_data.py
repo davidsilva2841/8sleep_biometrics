@@ -35,6 +35,7 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-19 08:06:00', 'end_time': '2025-01-19 15:44:00', 'side': 'right'},
             {'start_time': '2025-01-20 07:36:00', 'end_time': '2025-01-20 14:50:00', 'side': 'right'},
             {'start_time': '2025-01-21 06:00:00', 'end_time': '2025-01-21 14:00:00', 'side': 'right'},
+            {'start_time': '2025-01-22 06:30:00', 'end_time': '2025-01-22 13:30:00', 'side': 'right'},
         ]
     },
     'tally': {
@@ -55,6 +56,7 @@ SLEEP_DATA: SleepDataType = {
         'raw_format': 'raw',
         'sleep_periods': [
             {'start_time': '2025-01-20 03:06:00', 'end_time': '2025-01-20 08:51:00', 'side': 'left'},
+            {'start_time': '2025-01-22 00:06:00', 'end_time': '2025-01-22 06:42:00', 'side': 'left'},
         ]
     },
     'den': {

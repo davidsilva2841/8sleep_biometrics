@@ -14,6 +14,10 @@ from config import PROJECT_FOLDER_PATH
 
 def _clean_files(file_paths):
     for file_path in file_paths:
+        print(f'Cleaning file: {file_path}')
+        if file_path.endswith('.DS_Store'):
+            tools.delete_file(file_path)
+            continue
         data = tools.read_file(file_path)
         data = re.sub(r"^sep=.*\n", "", data, flags=re.MULTILINE)
         data = re.sub(r'\xa0', ' ', data)
@@ -226,8 +230,11 @@ class DataManager:
             f'{self.validation_folder}load/',
             full_path=True
         )
+
         _clean_files(file_paths)
         for file_path in file_paths:
+            if file_path.endswith('.DS_Store'):
+                continue
             if 'heartratevariability' in file_path.lower():
                 _update_variability(file_path, self.hrv_file_path)
             elif 'heartrate' in file_path.lower():

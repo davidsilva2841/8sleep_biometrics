@@ -1,5 +1,4 @@
 # scp -r -P 8822 'pod2:/persistent/*.RAW' /Users/ds/main/8sleep_biometrics/data/people/david/raw/load
-# scp -r -P 8822 'pod1:/persistent/*.RAW' /Users/ds/main/8sleep_biometrics/data/people/tally/raw/load
 import json
 from data_manager import DataManager
 from calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
@@ -23,13 +22,15 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 def main():
 
-    trinity = DataManager('trinity')
     den = DataManager('den')
     den.heart_rate_df
     david = DataManager('david')
+    david.load_new_raw_data()
+    david.load_new_validation_data()
     tally = DataManager('tally')
-
+    trinity.load_new_raw_data()
     data_managers = [trinity, tally, david]
+    trinity = DataManager('trinity')
     data = tally
     period = data.sleep_periods[-1]
     for data in data_managers:
@@ -38,11 +39,11 @@ def main():
             end_time = period['end_time']
 
             runtime_params: RuntimeParams = {
-                'window': 6,
+                'window': 4,
                 'slide_by': 1,
-                'moving_avg_size': 100,
-                'hr_std_range': (1,15),
-                'percentile': (20, 80),
+                'moving_avg_size': 120,
+                'hr_std_range': (1,10),
+                'percentile': (17.5, 82.5),
             }
             run_data = RunData(
                 data.piezo_df,
@@ -61,8 +62,8 @@ def main():
             df_pred = run_data.df_pred.copy()
             df_pred = clean_df_pred(df_pred)
 
-            r_window_avg = 15
-            r_min_periods = 10
+            r_window_avg = 10
+            r_min_periods = 5
 
             df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
 
@@ -70,7 +71,7 @@ def main():
             df_pred['hrv'] = df_pred['hrv'].rolling(window=40, min_periods=10).mean()
 
             run_data.print_results()
-            results = analyze_predictions(data, df_pred, run_data, plot=True)
+            results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=True)
 
 
         df = pd.read_pickle('/Users/ds/main/8sleep_biometrics/data/people/den/raw/load/2025-01-20.pkl.zip')

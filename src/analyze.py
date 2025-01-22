@@ -53,7 +53,7 @@ def _plot_validation_data(
         start_time: str,
         end_time: str,
         data: DataManager,
-        estimated_df: pd.DataFrame = None,
+        df_pred: pd.DataFrame = None,
         chart_info: ChartInfo = None,
         results: Results=None,
 ):
@@ -139,9 +139,9 @@ def _plot_validation_data(
         # -------------------------------------------------------------------------
         # 4. If an estimated_df is provided, resample and clip it as well
         # -------------------------------------------------------------------------
-        if estimated_df is not None:
-            estimated_df['start_time'] = pd.to_datetime(estimated_df['start_time']).dt.tz_localize(None)
-            estimated_df_resampled = resample_df(estimated_df, time_col='start_time')
+        if df_pred is not None:
+            df_pred['start_time'] = pd.to_datetime(df_pred['start_time']).dt.tz_localize(None)
+            estimated_df_resampled = resample_df(df_pred, time_col='start_time')
             estimated_df_resampled = estimated_df_resampled.loc[
                 (estimated_df_resampled.index >= start_dt) &
                 (estimated_df_resampled.index <= end_dt)
@@ -273,23 +273,25 @@ def _plot_validation_data(
         # Add JSON stats at the bottom
 
         if chart_info is not None:
-            labels = "INFO\n" + "\n".join(f"{key.ljust(11)}: {value}" for key, value in chart_info['labels'].items())
-            fig.text(
-                0.01, 0.15, # Position: x, y (centered horizontally below the chart)
-                labels,
-                ha='left', va='top', fontsize=16, family='monospace'
-            )
-            labels = "RUNTIME PARAMETERS\n" + "\n".join(f"{key.ljust(14)}: {value}" for key, value in chart_info['runtime_params'].items())
-            fig.text(
-                0.30, 0.15, # Position: x, y (centered horizontally below the chart)
-                labels,
-                ha='left', va='top', fontsize=16, family='monospace'
-            )
+            if 'labels' in chart_info:
+                labels = "INFO\n" + "\n".join(f"{key.ljust(11)}: {value}" for key, value in chart_info['labels'].items())
+                fig.text(
+                    0.01, 0.15, # Position: x, y (centered horizontally below the chart)
+                    labels,
+                    ha='left', va='top', fontsize=16, family='monospace'
+                )
+            if 'runtime_params' in chart_info:
+                labels = "RUNTIME PARAMETERS\n" + "\n".join(f"{key.ljust(14)}: {value}" for key, value in chart_info['runtime_params'].items())
+                fig.text(
+                    0.30, 0.15, # Position: x, y (centered horizontally below the chart)
+                    labels,
+                    ha='left', va='top', fontsize=16, family='monospace'
+                )
         if results is not None:
             accuracy = results['heart_rate']['accuracy']
             stats_text = "HEART RATE ACCURACY\n" + "\n".join(f"{key.ljust(6)}: {value}" for key, value in accuracy.items())
             fig.text(
-                0.50, 0.15, # Position: x, y (centered horizontally below the chart)
+                0.53, 0.15, # Position: x, y (centered horizontally below the chart)
                 stats_text,
                 ha='left', va='top', fontsize=16, family='monospace'
             )
@@ -369,18 +371,27 @@ def _calculate_accuracy(data: DataManager, df_pred: pd.DataFrame, column: Evalua
 
 
 
-def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, run_data: RunData, plot=True) -> Results:
+# def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, start_time: str, end_time: str, run_data: RunData, plot=True) -> Results:
+def analyze_predictions(
+        data: DataManager,
+        df_pred: pd.DataFrame,
+        start_time: str,
+        end_time: str,
+        chart_info: ChartInfo = None,
+        plot=True
+) -> Results:
     df_pred.sort_values(by=['start_time'], inplace=True)
     df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
+
     # columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'breathing_rate']
     columns: List[EvaluationMetric] = ['heart_rate']
-    # df_dict = split_df_by_source(df_pred, 'source')
+
     results: Results = {}
     for column in columns:
         results[column] = _calculate_accuracy(data, df_pred, column)
 
     if plot:
-        _plot_validation_data(run_data.start_time, run_data.end_time, data, df_pred, run_data.chart_info, results=results)
+        _plot_validation_data(start_time, end_time, data, df_pred, chart_info, results=results)
         print(json.dumps(results, indent=4))
 
 

@@ -25,7 +25,7 @@ class Measurements(TypedDict):
 
 
 
-class ChartLabels(TypedDict):
+class ChartLabels(TypedDict, total=False):
     name: str
     start_time: str
     end_time: str
@@ -40,6 +40,7 @@ class RuntimeParams(TypedDict):
     hr_std_range: Tuple[int, int]
     percentile: Tuple[int, int]
 
+
 class Accuracy(TypedDict):
     window: int
     slide_by: int
@@ -48,10 +49,10 @@ class Accuracy(TypedDict):
     percentile: Tuple[int, int]
 
 
-class ChartInfo(TypedDict):
+class ChartInfo(TypedDict, total=False):
     labels: ChartLabels
     runtime_params: RuntimeParams
-    accuracy: Union[None, Accuracy]
+    accuracy: Accuracy
 
 
 class RunData:

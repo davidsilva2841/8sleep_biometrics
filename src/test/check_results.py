@@ -9,8 +9,6 @@ rows = []
 
 
 
-
-
 def build_summary(df: pd.DataFrame):
 
     # Perform the calculations after filtering
@@ -91,10 +89,10 @@ if filtered_df.empty:
     print("No rows match the filtering criteria. Check for inconsistent data formats.")
 else:
     print("Filtered DataFrame size:", filtered_df.shape)
-best = df[df['params_hash'] == 'fbe7bdc645e97035d5b335a45e660d6f1da844f8']
-sum_selected = summary_df[summary_df['params_hash'] == 'c457cd8a5722011f7e87385f6abb3053138bb609']
+best = df[df['params_hash'] == 'e4fc1070cf14d1b45469cfa4d3d4ea2a5816bd64']
+sum_selected = summary_df[summary_df['params_hash'] == '0831c421c3c21764421c3cabb4511b56a7527ba0']
 
-top_100_df = summary_df.sort_values(by='mean_rmse', ascending=True).head(200)
+top_100_df = summary_df.sort_values(by='mean_rmse', ascending=True).head(100)
 top_100_df['hr_std_range'].value_counts()
 top_100_df['window'].value_counts()
 top_100_df['percentile'].value_counts()

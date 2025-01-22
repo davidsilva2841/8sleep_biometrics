@@ -45,7 +45,7 @@ def list_dir_files(folder_path, full_path=False):
     for file_name in file_names:
         file_path = os.path.join(folder_path, file_name)
 
-        if os.path.isfile(file_path):
+        if os.path.isfile(file_path) and not file_path.endswith('.DS_Store'):
             files_list.append(file_path if full_path else file_name)
 
     files_list.sort()

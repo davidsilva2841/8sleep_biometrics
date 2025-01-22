@@ -122,10 +122,10 @@ def parallel_predictions(param_combinations):
 if __name__ == "__main__":
     param_grid = {
         "slide_by": [1],
-        "window": [6, 8, 10],
-        "hr_std_range": [(1,8), (1, 10), (1,12), (1, 15)],
-        "percentile": [(10, 90), (15, 85), (17.5, 82.5), (20, 80)],
-        "moving_avg_size": [100, 120, 135, 150, 180]
+        "window": [4, 5, 6, 7, 8],
+        "hr_std_range": [(1,8), (1, 10), (1,12), (1, 15), (1, 20)],
+        "percentile": [(17.5, 82.5), (20, 80), (22.5, 77.5), (25, 75)],
+        "moving_avg_size": [100, 120, 130]
     }
 
     # Generate all combinations of parameters with named keys
