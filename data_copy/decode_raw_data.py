@@ -128,22 +128,22 @@ def load_raw_data(folder_path=None, file_path=None, piezo_only: bool = False):
     data = _rename_keys(data)
     return data
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Copy all files from a source folder to a destination folder.")
-    parser.add_argument("from_folder", type=str, help="Path to the source folder")
-    parser.add_argument("to_folder", type=str, help="Path to the destination folder")
-    # If no arguments provided, show a friendly message
-    if len(sys.argv) == 1:
-        parser.print_help()
-        print("\nExample usage:")
-        print("  python script.py /path/data/raw/ /path/to/save_output")
-        sys.exit(1)
-    args = parser.parse_args()
-    data = load_raw_data(folder_path=args.from_folder, piezo_only=True)
-    df = pd.DataFrame(data['piezo_dual'])
-    file_path = os.path.join(args.to_folder, 'output.pkl.zip')
-    print(f'Saving data to file...')
-    df.to_pickle(file_path, compression='zip')
-    print(f'Saved file, please share {file_path}')
-
+data = load_raw_data(file_path='/Users/ds/main/8sleep_biometrics/data_copy/0000CEC5.RAW', piezo_only=True)
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description="Copy all files from a source folder to a destination folder.")
+#     parser.add_argument("from_folder", type=str, help="Path to the source folder")
+#     parser.add_argument("to_folder", type=str, help="Path to the destination folder")
+#     # If no arguments provided, show a friendly message
+#     if len(sys.argv) == 1:
+#         parser.print_help()
+#         print("\nExample usage:")
+#         print("  python script.py /path/data/raw/ /path/to/save_output")
+#         sys.exit(1)
+#     args = parser.parse_args()
+#     data = load_raw_data(folder_path=args.from_folder, piezo_only=True)
+#     df = pd.DataFrame(data['piezo_dual'])
+#     file_path = os.path.join(args.to_folder, 'output.pkl.zip')
+#     print(f'Saving data to file...')
+#     df.to_pickle(file_path, compression='zip')
+#     print(f'Saved file, please share {file_path}')
+#

@@ -7,11 +7,13 @@ class TimePeriod(TypedDict):
     side: Literal['left', 'right']
 
 ValidationFormat = Literal['apple_watch', 'polar']
+RawFormat = Literal['raw', 'pkl']
 
 class SleepEntry(TypedDict):
     sleep_periods: List[TimePeriod]
     sensor_count: Literal[1, 2]
     validation_format: ValidationFormat
+    raw_format: RawFormat
 
 
 SleepDataType = Dict[str, SleepEntry]
@@ -19,7 +21,8 @@ SleepDataType = Dict[str, SleepEntry]
 SLEEP_DATA: SleepDataType = {
     'david': {
         'validation_format': 'apple_watch',
-        'sensor_count': 2,
+        'sensor_count': 1,
+        'raw_format': 'raw',
         'sleep_periods': [
             {'start_time': '2025-01-10 08:00:00', 'end_time': '2025-01-10 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-12 08:00:00', 'end_time': '2025-01-12 15:00:00', 'side': 'right'},
@@ -31,20 +34,25 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-18 07:10:00', 'end_time': '2025-01-18 14:20:00', 'side': 'right'},
             {'start_time': '2025-01-19 08:06:00', 'end_time': '2025-01-19 15:44:00', 'side': 'right'},
             {'start_time': '2025-01-20 07:36:00', 'end_time': '2025-01-20 14:50:00', 'side': 'right'},
+            {'start_time': '2025-01-21 06:00:00', 'end_time': '2025-01-21 14:00:00', 'side': 'right'},
         ]
     },
     'tally': {
         'validation_format': 'apple_watch',
         'sensor_count': 2,
+        'raw_format': 'raw',
         'sleep_periods': [
             {'start_time': '2025-01-14 06:30:00', 'end_time': '2025-01-14 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-18 06:30:00', 'end_time': '2025-01-18 13:30:00', 'side': 'right'},
             {'start_time': '2025-01-19 06:30:00', 'end_time': '2025-01-19 13:30:00', 'side': 'right'},
+            {'start_time': '2025-01-20 06:00:00', 'end_time': '2025-01-20 14:00:00', 'side': 'right'},
+            {'start_time': '2025-01-21 05:30:00', 'end_time': '2025-01-21 14:08:00', 'side': 'left'},
         ]
     },
     'trinity': {
         'validation_format': 'apple_watch',
         'sensor_count': 1,
+        'raw_format': 'raw',
         'sleep_periods': [
             {'start_time': '2025-01-20 03:06:00', 'end_time': '2025-01-20 08:51:00', 'side': 'left'},
         ]
@@ -52,8 +60,9 @@ SLEEP_DATA: SleepDataType = {
     'den': {
         'validation_format': 'polar',
         'sensor_count': 1,
+        'raw_format': 'pkl',
         'sleep_periods': [
-            {'start_time': '2025-01-20 00:36:00', 'end_time': '2025-01-20 08:49:00', 'side': 'right'},
+            {'start_time': '2025-01-21 02:47:00', 'end_time': '2025-01-21 09:38:00', 'side': 'right'},
         ]
     }
 }

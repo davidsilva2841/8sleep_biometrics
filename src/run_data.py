@@ -180,6 +180,7 @@ class RunData:
         if len(self.heart_rates) >= self.moving_avg_size:
             self.last_heart_rates = self.heart_rates[-self.moving_avg_size:]
             self.hr_moving_avg = statistics.mean(self.last_heart_rates)
+
             self.lower_bound = np.percentile(self.last_heart_rates, self.percentile[0])
             self.upper_bound = np.percentile(self.last_heart_rates, self.percentile[1])
 
@@ -240,9 +241,11 @@ class RunData:
 
     def combine_results(self):
         self.df_pred = pd.DataFrame(self.combined_measurements)
-        self.df_pred.dropna(subset=['heart_rate'], inplace=True)
-        self.df_pred.sort_values(by='start_time', inplace=True)
-
+        if not self.df_pred.empty:
+            self.df_pred.dropna(subset=['heart_rate'], inplace=True)
+            self.df_pred.sort_values(by='start_time', inplace=True)
+        else:
+            print(f'EMPTY DATAFRAME {self.name} {self.start_time} -> {self.end_time}')
         # self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
         # self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
         # self.df_pred_side_1.sort_values(by='start_time', inplace=True)

@@ -9,8 +9,8 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 from scipy.signal import welch, periodogram
 
-from src.heart.datautils import MAD, outliers_iqr_method, outliers_modified_z
-from src.heart.filtering import quotient_filter, filter_signal
+from heart.datautils import MAD, outliers_iqr_method, outliers_modified_z
+from heart.filtering import quotient_filter, filter_signal
 
 
 __all__ = ['calc_rr',
@@ -45,24 +45,6 @@ def calc_rr(peaklist, sample_rate, working_data={}):
     working_data : dict
         working_data dictionary object containing all of heartpy's temp objects
 
-    Examples
-    --------
-    Let's assume we detected peaks at these positions in the signal:
-
-    >>> peaklist = [200, 280, 405, 501, 615]
-
-    It is then easy to call calc_rr to compute what we need:
-
-    >>> wd = calc_rr(peaklist, sample_rate = 100.0)
-    >>> wd['RR_list']
-    array([ 800., 1250.,  960., 1140.])
-    >>> wd['RR_diff']
-    array([450., 290., 180.])
-    >>> wd['RR_sqdiff']
-    array([202500.,  84100.,  32400.])
-
-    Note that the list of peak-peak intervals is of length len(peaks) - 1
-    the length of the differences is of length len(peaks) - 2
     '''
     peaklist = np.array(peaklist) #cast numpy array to be sure or correct array type
 
@@ -227,34 +209,6 @@ def clean_rr_intervals(working_data, method='quotient-filter'):
     working_data : dict
         dictionary object that contains all heartpy's working data (temp) objects.
         will be created if not passed to function
-
-    Examples
-    --------
-    Let's load some data
-
-    >>> import heartpy as hp
-    >>> data, timer = hp.load_exampledata(1)
-    >>> sample_rate = hp.get_samplerate_mstimer(timer)
-
-    Run at least one analysis cycle first so that the dicts are populated
-
-    >>> wd, m = hp.process(data, sample_rate)
-    >>> wd = clean_rr_intervals(working_data = wd)
-    >>> ['%.3f' %x for x in wd['RR_list_cor'][0:5]]
-    ['897.470', '811.997', '829.091', '777.807', '803.449']
-
-    You can also specify the outlier rejection method to be used, for example using
-    the z-score method:
-
-    >>> wd = clean_rr_intervals(working_data = wd, method = 'z-score')
-    >>> ['%.3f' %x for x in wd['RR_list_cor'][0:5]]
-    ['897.470', '811.997', '829.091', '777.807', '803.449']
-
-    Or the inter-quartile range (iqr) based method:
-
-    >>> wd = clean_rr_intervals(working_data = wd, method = 'iqr')
-    >>> ['%.3f' %x for x in wd['RR_list_cor'][0:5]]
-    ['897.470', '811.997', '829.091', '965.849', '803.449']
     '''
 
     #generate RR_list_cor indices relative to RR_list

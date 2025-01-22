@@ -5,7 +5,7 @@ Functions for data filtering tasks.
 from scipy.signal import butter, filtfilt, iirnotch, savgol_filter
 import numpy as np
 
-from src.heart.datautils import MAD
+from heart.datautils import MAD
 
 __all__ = ['filter_signal',
            'hampel_filter',

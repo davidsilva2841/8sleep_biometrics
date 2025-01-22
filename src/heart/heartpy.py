@@ -11,21 +11,21 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 from scipy.signal import butter, filtfilt, welch, periodogram, resample_poly, resample
 
-from src.heart import exceptions
-from src.heart.datautils import get_data, get_samplerate_mstimer, get_samplerate_datetime,\
+from heart import exceptions
+from heart.datautils import get_data, get_samplerate_mstimer, get_samplerate_datetime,\
                        rolling_mean, outliers_iqr_method, outliers_modified_z, \
                        load_exampledata
-from src.heart.preprocessing import scale_data, scale_sections, interpolate_clipping, \
+from heart.preprocessing import scale_data, scale_sections, interpolate_clipping, \
                            flip_signal, enhance_peaks, enhance_ecg_peaks
-from src.heart.filtering import filter_signal, hampel_filter, hampel_correcter, \
+from heart.filtering import filter_signal, hampel_filter, hampel_correcter, \
                        remove_baseline_wander, smooth_signal
-from src.heart.peakdetection import make_windows, append_dict, fit_peaks, check_peaks, \
+from heart.peakdetection import make_windows, append_dict, fit_peaks, check_peaks, \
                            check_binary_quality, interpolate_peaks
-from src.heart.visualizeutils import plotter, segment_plotter, plot_poincare, plot_breathing
-from src.heart.analysis import calc_rr, calc_rr_segment, clean_rr_intervals, calc_ts_measures, \
+from heart.visualizeutils import plotter, segment_plotter, plot_poincare, plot_breathing
+from heart.analysis import calc_rr, calc_rr_segment, clean_rr_intervals, calc_ts_measures, \
                       calc_fd_measures, calc_breathing, calc_poincare
 
-from src.heart import config
+from heart import config
 config.init() #initialize global conf vars
 
 

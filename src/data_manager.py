@@ -6,7 +6,7 @@ import pandas as pd
 
 import tools
 from load_raw import load_raw_data
-from sleep_data import SLEEP_DATA, TimePeriod
+from sleep_data import SLEEP_DATA, TimePeriod, ValidationFormat, RawFormat
 from config import PROJECT_FOLDER_PATH
 
 
@@ -66,6 +66,7 @@ def _update_sleep(file_path, output_path):
     combined_df = pd.concat(dfs, ignore_index=True)
     combined_df.drop_duplicates(inplace=True)
     combined_df.sort_values(by=['start_time'], inplace=True)
+    tools.delete_file(file_path)
     combined_df.to_csv(output_path, index=False)
     print(f'Saved sleep to: {output_path}')
 
@@ -92,6 +93,7 @@ def _update_variability(file_path, output_path):
     combined_df = pd.concat(dfs, ignore_index=True)
     combined_df.drop_duplicates(inplace=True)
     combined_df.sort_values(by=['start_time'], inplace=True)
+    tools.delete_file(file_path)
     combined_df.to_csv(output_path, index=False)
     print(f'Saved HRV to: {output_path}')
 
@@ -118,6 +120,7 @@ def _update_heart_rate(file_path, output_path):
     combined_df = pd.concat(dfs, ignore_index=True)
     combined_df.drop_duplicates(inplace=True)
     combined_df.sort_values(by=['start_time'], inplace=True)
+    tools.delete_file(file_path)
     combined_df.to_csv(output_path, index=False)
     print(f'Saved heart rate to: {output_path}')
 
@@ -141,7 +144,7 @@ def _update_breath_rate(file_path, output_path):
         new_df = new_df[cols]
 
     dfs.append(new_df)
-
+    tools.delete_file(file_path)
     combined_df = pd.concat(dfs, ignore_index=True)
     combined_df.drop_duplicates(inplace=True)
     combined_df.sort_values(by=['start_time'], inplace=True)
@@ -172,25 +175,29 @@ class DataManager:
         sleep_info = SLEEP_DATA[name]
         self.sleep_periods: List[TimePeriod] = sleep_info['sleep_periods']
         self.sensor_count: int = sleep_info['sensor_count']
-        self.validation_format: str = sleep_info['validation_format']
+        self.validation_format: ValidationFormat = sleep_info['validation_format']
+        self.raw_format: RawFormat = sleep_info['raw_format']
+
+        # Load the validation data
+        if not new:
+            self.heart_rate_df: pd.DataFrame = pd.read_csv(self.heart_rate_file_path)
+            self.heart_rate_df['start_time'] = pd.to_datetime(self.heart_rate_df['start_time'])
+            self.hrv_df: pd.DataFrame = pd.read_csv(self.hrv_file_path)
+            self.hrv_df['start_time'] = pd.to_datetime(self.hrv_df['start_time'])
 
         if self.validation_format == 'apple_watch' and not new:
-            # Load the dataframes
-            self.heart_rate_df: pd.DataFrame = pd.read_csv(self.heart_rate_file_path)
             self.breath_rate_df: pd.DataFrame = pd.read_csv(self.breath_rate_file_path)
-            self.hrv_df: pd.DataFrame = pd.read_csv(self.hrv_file_path)
             self.sleep_df: pd.DataFrame = pd.read_csv(self.sleep_data_file_path)
-
-            self.heart_rate_df['start_time'] = pd.to_datetime(self.heart_rate_df['start_time'])
             self.breath_rate_df['start_time'] = pd.to_datetime(self.breath_rate_df['start_time'])
-            self.hrv_df['start_time'] = pd.to_datetime(self.hrv_df['start_time'])
             self.sleep_df['start_time'] = pd.to_datetime(self.sleep_df['start_time'])
+
+        else:
+            self.breath_rate_df = pd.DataFrame()
+            self.sleep_df = pd.DataFrame()
 
 
         if load and not new:
             self.load_piezo_df()
-
-
 
 
     def load_new_raw_data(self):
@@ -223,7 +230,6 @@ class DataManager:
         for file_path in file_paths:
             if 'heartratevariability' in file_path.lower():
                 _update_variability(file_path, self.hrv_file_path)
-
             elif 'heartrate' in file_path.lower():
                 _update_heart_rate(file_path, self.heart_rate_file_path)
             elif 'respiratory' in file_path.lower():
@@ -239,7 +245,7 @@ class DataManager:
 
 
     def _load_new_polar_validation_data(self):
-        df = pd.read_csv(f'{self.validation_folder}/load/heart_rate_hrv.csv', sep=';')
+        df = pd.read_csv(f'{self.validation_folder}/load/hr+hrv-polar-h10.csv', sep=';')
         df.rename({
             'Phone timestamp': 'start_time',
             'HR [bpm]': 'heart_rate',
@@ -271,19 +277,31 @@ class DataManager:
         return piezo_df
 
 
-    def update_piezo_df(self):
+    def _load_pkl_piezo(self) -> pd.DataFrame:
+        file_paths = tools.list_dir_files(f'{self.raw_folder}/loaded', full_path=True)
+        dfs = []
+        for file_path in file_paths:
+            dfs.append(pd.read_pickle(file_path))
+        df = pd.concat(dfs)
+        return df
+
+    def _load_raw_piezo(self) -> pd.DataFrame:
         raw_data = load_raw_data(folder_path=self.raw_folder_loaded, piezo_only=True)
-        piezo_df = pd.DataFrame(raw_data['piezo_dual'])
+        return pd.DataFrame(raw_data['piezo_dual'])
 
-        piezo_df.sort_values(by='ts', ascending=True, inplace=True)
+
+    def update_piezo_df(self):
+        if self.raw_format == 'raw':
+            self.piezo_df = self._load_raw_piezo()
+        else:
+            self.piezo_df = self._load_pkl_piezo()
+
+        self.piezo_df.sort_values(by='ts', ascending=True, inplace=True)
         print(f'Saving df to feather: {self.piezo_df_file_path}')
-        piezo_df.to_feather(self.piezo_df_file_path)
-        piezo_df['ts'] = pd.to_datetime(piezo_df['ts'])
-        piezo_df.set_index('ts', inplace=True)
-
-        self.piezo_df = piezo_df
-
-        return piezo_df
+        self.piezo_df.to_feather(self.piezo_df_file_path)
+        self.piezo_df['ts'] = pd.to_datetime(self.piezo_df['ts'])
+        self.piezo_df.set_index('ts', inplace=True)
+        return self.piezo_df
 
 
 

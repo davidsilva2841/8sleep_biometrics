@@ -97,32 +97,36 @@ def _plot_validation_data(
             _df = _df.resample(freq).ffill()
             return _df
 
+        start_dt = pd.to_datetime(start_time)
+        end_dt = pd.to_datetime(end_time)
         # -------------------------------------------------------------------------
         # 2. Resample each DataFrame (breath_rate, hr, hrv, sleep)
         # -------------------------------------------------------------------------
-        breath_rate_resampled = resample_df(data.breath_rate_df, time_col='start_time')
+        if not data.breath_rate_df.empty:
+            breath_rate_resampled = resample_df(data.breath_rate_df, time_col='start_time')
+            breath_rate_resampled = breath_rate_resampled.loc[
+                (breath_rate_resampled.index >= start_dt) & (breath_rate_resampled.index <= end_dt)
+                ]
         hr_resampled = resample_df(data.heart_rate_df, time_col='start_time')
         hrv_resampled = resample_df(data.hrv_df, time_col='start_time')
 
-        # Sleep
-        sleep_stage_map = {
-            'awake': 0,
-            'asleepCore': 1,
-            'asleepREM': 2,
-        }
-        sleep_df_copy = data.sleep_df.copy()
-        sleep_df_copy['sleep_stage_actual'] = sleep_df_copy['sleep_stage_actual'].map(sleep_stage_map)
-        sleep_resampled = resample_df_sleep(sleep_df_copy, time_col='start_time')
-
+        if not data.sleep_df.empty:
+            # Sleep
+            sleep_stage_map = {
+                'awake': 0,
+                'asleepCore': 1,
+                'asleepREM': 2,
+            }
+            sleep_df_copy = data.sleep_df.copy()
+            sleep_df_copy['sleep_stage_actual'] = sleep_df_copy['sleep_stage_actual'].map(sleep_stage_map)
+            sleep_resampled = resample_df_sleep(sleep_df_copy, time_col='start_time')
+            sleep_resampled = sleep_resampled.loc[
+                (sleep_resampled.index >= start_dt) & (sleep_resampled.index <= end_dt)
+                ]
         # --------------------------------------- ----------------------------------
         # 3. Clip/respect the specified start/end times
         # -------------------------------------------------------------------------
-        start_dt = pd.to_datetime(start_time)
-        end_dt = pd.to_datetime(end_time)
 
-        breath_rate_resampled = breath_rate_resampled.loc[
-            (breath_rate_resampled.index >= start_dt) & (breath_rate_resampled.index <= end_dt)
-            ]
         hr_resampled = hr_resampled.loc[
             (hr_resampled.index >= start_dt) & (hr_resampled.index <= end_dt)
 
@@ -130,9 +134,7 @@ def _plot_validation_data(
         hrv_resampled = hrv_resampled.loc[
             (hrv_resampled.index >= start_dt) & (hrv_resampled.index <= end_dt)
             ]
-        sleep_resampled = sleep_resampled.loc[
-            (sleep_resampled.index >= start_dt) & (sleep_resampled.index <= end_dt)
-            ]
+
 
         # -------------------------------------------------------------------------
         # 4. If an estimated_df is provided, resample and clip it as well
@@ -156,26 +158,27 @@ def _plot_validation_data(
         # Adjust the right border to leave extra whitespace (0.6 means 60% width for plots, 40% whitespace).
         fig.subplots_adjust(right=0.6)
 
-        # Plot 1: Breath Rate
-        axes[0].plot(
-            breath_rate_resampled.index,
-            breath_rate_resampled['breathing_rate_actual'],
-            color='#f44336',
-            label='Breathing Rate',
-            linewidth=4
-        )
-        # If estimated breath_rate is provided, overlay it
-        if estimated_df_resampled is not None and 'breathing_rate' in estimated_df_resampled.columns:
+        if not data.breath_rate_df.empty:
+            # Plot 1: Breath Rate
             axes[0].plot(
-                estimated_df_resampled.index,
-                estimated_df_resampled['breathing_rate'],
-                color='#757ce8',
-                label='Estimated Breathing Rate',
-                linewidth=2
+                breath_rate_resampled.index,
+                breath_rate_resampled['breathing_rate_actual'],
+                color='#f44336',
+                label='Breathing Rate',
+                linewidth=4
             )
-        axes[0].set_ylabel("Breath Rate (count/min)")
-        axes[0].legend(loc='upper left')
-        axes[0].grid(True)
+            # If estimated breath_rate is provided, overlay it
+            if estimated_df_resampled is not None and 'breathing_rate' in estimated_df_resampled.columns:
+                axes[0].plot(
+                    estimated_df_resampled.index,
+                    estimated_df_resampled['breathing_rate'],
+                    color='#757ce8',
+                    label='Estimated Breathing Rate',
+                    linewidth=2
+                )
+            axes[0].set_ylabel("Breath Rate (count/min)")
+            axes[0].legend(loc='upper left')
+            axes[0].grid(True)
 
         # Plot 2: Heart Rate
         axes[1].plot(
@@ -235,23 +238,24 @@ def _plot_validation_data(
         axes[2].legend(loc='upper left')
         axes[2].grid(True)
 
-        # Plot 4: Sleep
-        axes[3].step(
-            sleep_resampled.index,
-            sleep_resampled['sleep_stage_actual'],
-            where='post',
-            color='purple',
-            label='Sleep Stage',
-            linewidth=4
-        )
-        axes[3].set_ylabel("Sleep Stage\n(0=awake,1=core,2=rem)")
-        axes[3].legend(loc='upper left')
-        axes[3].grid(True)
-        axes[3].set_ylim(0, 3)
-        axes[3].yaxis.set_major_locator(MaxNLocator(integer=True))
-        sleep_stage_labels = ['Awake', 'Core', 'REM', '']
-        axes[3].set_yticks(range(len(sleep_stage_labels)))
-        axes[3].set_yticklabels(sleep_stage_labels)
+        if not data.sleep_df.empty:
+            # Plot 4: Sleep
+            axes[3].step(
+                sleep_resampled.index,
+                sleep_resampled['sleep_stage_actual'],
+                where='post',
+                color='purple',
+                label='Sleep Stage',
+                linewidth=4
+            )
+            axes[3].set_ylabel("Sleep Stage\n(0=awake,1=core,2=rem)")
+            axes[3].legend(loc='upper left')
+            axes[3].grid(True)
+            axes[3].set_ylim(0, 3)
+            axes[3].yaxis.set_major_locator(MaxNLocator(integer=True))
+            sleep_stage_labels = ['Awake', 'Core', 'REM', '']
+            axes[3].set_yticks(range(len(sleep_stage_labels)))
+            axes[3].set_yticklabels(sleep_stage_labels)
 
         # Set the x-limits to the specified range
         axes[-1].set_xlim([start_dt, end_dt])
@@ -365,10 +369,11 @@ def _calculate_accuracy(data: DataManager, df_pred: pd.DataFrame, column: Evalua
 
 
 
-def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, run_data: RunData, plot=True):
+def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, run_data: RunData, plot=True) -> Results:
     df_pred.sort_values(by=['start_time'], inplace=True)
     df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
-    columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'breathing_rate']
+    # columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'breathing_rate']
+    columns: List[EvaluationMetric] = ['heart_rate']
     # df_dict = split_df_by_source(df_pred, 'source')
     results: Results = {}
     for column in columns:

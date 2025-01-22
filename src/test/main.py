@@ -10,6 +10,7 @@ from analyze import analyze_predictions
 import tools
 import hashlib
 from globals import data_managers
+import traceback
 
 from config import PROJECT_FOLDER_PATH
 import warnings
@@ -28,6 +29,8 @@ def hash_dict(result):
     # Generate SHA-128 hash (SHA-256 recommended if security is a concern)
     hash_obj = hashlib.sha1(json_str.encode())  # SHA-1 (160-bit) or change to sha256
     return hash_obj.hexdigest()
+
+
 
 def run_prediction(param_groups):
     rolling_combinations = [
@@ -56,11 +59,7 @@ def run_prediction(param_groups):
                     data.piezo_df,
                     start_time,
                     end_time,
-                    slide_by=params['slide_by'],
-                    window=params['window'],
-                    hr_std_range=params['hr_std_range'],
-                    percentile=params['percentile'],
-                    moving_avg_size=params['moving_avg_size'],
+                    runtime_params=params,
                     name=data.name,
                     side=period['side'],
                     log=False
@@ -68,25 +67,37 @@ def run_prediction(param_groups):
                 estimate_heart_rate_intervals(run_data)
                 gc.collect()
                 for combo in rolling_combinations:
-                    df_pred = run_data.df_pred.copy()
-                    df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=combo['r_window_avg'], min_periods=combo['r_min_periods']).mean()
+                    try:
+                        if run_data.df_pred.empty:
+                            break
+                        df_pred = run_data.df_pred.copy()
 
-                    results = analyze_predictions(data, df_pred, run_data, plot=False)
-                    iter_params = {**params, **combo}
-                    result = {**run_data.chart_info, **results, **iter_params}
+                        df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=combo['r_window_avg'], min_periods=combo['r_min_periods']).mean()
 
-                    params_hash = hash_dict(iter_params)
-                    result['params_hash'] = params_hash
+                        iter_params = {**params, **combo}
+                        analyzed_results = analyze_predictions(data, df_pred, run_data, plot=False)
+                        result = {
+                            **run_data.chart_info['labels'],
+                            **run_data.chart_info['runtime_params'],
+                            **analyzed_results['heart_rate']['accuracy'],
+                            **iter_params,
+                        }
 
-                    json_file_name = hash_dict(result)
-                    file_path = f'{PROJECT_FOLDER_PATH}src/test/results/{json_file_name}.json'
-                    print(f'Saving result to json file: {file_path}')
-                    tools.write_json_to_file(file_path, result)
-                    print('DONE FOR -----------------------------------------------------------------------------------------------------')
-                    print(json.dumps(result, indent=4))
-                    df_pred.drop(df_pred.index, inplace=True)
-                    del df_pred
-                    gc.collect()
+                        params_hash = hash_dict(iter_params)
+                        result['params_hash'] = params_hash
+
+                        json_file_name = hash_dict(result)
+                        file_path = f'{PROJECT_FOLDER_PATH}src/test/results/{json_file_name}.json'
+                        print(f'Saving result to json file: {file_path}')
+                        tools.write_json_to_file(file_path, result)
+                        print('DONE FOR -----------------------------------------------------------------------------------------------------')
+                        print(json.dumps(result, indent=4))
+                        df_pred.drop(df_pred.index, inplace=True)
+                        del df_pred
+                        gc.collect()
+                    except Exception as e:
+                        print(e)
+                        traceback.print_exc()
 
                 del run_data
                 gc.collect()
@@ -98,7 +109,7 @@ def run_prediction(param_groups):
 
 # ---------------------------------------------------------------------------------------------------
 def parallel_predictions(param_combinations):
-    processes = 30
+    processes = 34
 
     random.shuffle(param_combinations)
     param_groups = np.array_split(param_combinations, processes)
@@ -111,10 +122,10 @@ def parallel_predictions(param_combinations):
 if __name__ == "__main__":
     param_grid = {
         "slide_by": [1],
-        "window": [10, 15, 30, 60],
-        "hr_std_range": [(1, 6), (1,8), (1, 10), (1, 15)],
-        "percentile": [(2, 98), (3,97), (5, 95), (7.5, 92.5),  (10, 90), (15, 85)],
-        "moving_avg_size": [10, 30, 60]
+        "window": [6, 8, 10],
+        "hr_std_range": [(1,8), (1, 10), (1,12), (1, 15)],
+        "percentile": [(10, 90), (15, 85), (17.5, 82.5), (20, 80)],
+        "moving_avg_size": [100, 120, 135, 150, 180]
     }
 
     # Generate all combinations of parameters with named keys

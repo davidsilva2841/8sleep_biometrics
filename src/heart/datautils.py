@@ -226,13 +226,6 @@ def _sliding_window(data, windowsize):
     out : array of arrays
         data segmented into separate windows.
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> data = np.array([1, 2, 3, 4, 5])
-    >>> windows = _sliding_window(data, windowsize = 3)
-    >>> windows.shape
-    (3, 3)
     '''
     shape = data.shape[:-1] + (data.shape[-1] - windowsize + 1, windowsize)
     strides = data.strides + (data.strides[-1],)
@@ -261,14 +254,6 @@ def rolling_mean(data, windowsize, sample_rate):
     out : 1-d numpy array
         sequence containing computed rolling mean
 
-    Examples
-    --------
-    >>> data, _ = load_exampledata(example = 1)
-    >>> rmean = rolling_mean(data, windowsize=0.75, sample_rate=100)
-    >>> rmean[100:110]
-    array([514.49333333, 514.49333333, 514.49333333, 514.46666667,
-           514.45333333, 514.45333333, 514.45333333, 514.45333333,
-           514.48      , 514.52      ])
     '''
 
     # calculate rolling mean

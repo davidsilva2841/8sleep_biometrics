@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import numpy as np
 
-from src.heart import config
+from heart import config
 
 __all__ = ['plotter',
            'segment_plotter',

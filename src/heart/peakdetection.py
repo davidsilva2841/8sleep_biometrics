@@ -5,8 +5,8 @@ functions for peak detection and related tasks
 import numpy as np
 from scipy.signal import resample
 
-from src.heart.analysis import calc_rr, update_rr
-from src.heart.exceptions import BadSignalWarning
+from heart.analysis import calc_rr, update_rr
+from heart.exceptions import BadSignalWarning
 
 
 __all__ = ['make_windows',
@@ -241,43 +241,6 @@ def fit_peaks(hrdata, rol_mean, sample_rate, bpmmin=40, bpmmax=180, working_data
     working_data : dict
         dictionary object that contains all heartpy's working data (temp) objects.
         will be created if not passed to function
-
-    Examples
-    --------
-    Part of peak detection pipeline. Uses moving average as a peak detection
-    threshold and rises it stepwise. Determines best fit by minimising
-    standard deviation of peak-peak distances as well as getting a bpm that
-    lies within the expected range.
-
-    Given included example data let's show how this works
-
-    >>> import heartpy as hp
-    >>> from heartpy.datautils import rolling_mean, _sliding_window
-    >>> data, _ = hp.load_exampledata(0)
-    >>> rol_mean = rolling_mean(data, windowsize = 0.75, sample_rate = 100.0)
-
-    We can then call this function and let the optimizer do its work:
-
-    >>> wd = fit_peaks(data, rol_mean, sample_rate = 100.0)
-
-    Now the wd dict contains the best fit paramater(s):
-
-    >>> wd['best']
-    20
-
-    This indicates the best fit can be obtained by raising the moving average
-    with 20%.
-
-    The results of the peak detection using these parameters are included too.
-    To illustrate, these are the first five detected peaks:
-
-    >>> wd['peaklist'][0:5]
-    [63, 165, 264, 360, 460]
-
-    and the corresponding peak-peak intervals:
-
-    >>> wd['RR_list'][0:4]
-    array([1020.,  990.,  960., 1000.])
     '''
 
     # moving average values to test
@@ -342,10 +305,6 @@ def check_peaks(rr_arr, peaklist, ybeat, reject_segmentwise=False, working_data=
     working_data : dict
         working_data dictionary object containing all of heartpy's temp objects
 
-    Examples
-    --------
-    Part of peak detection pipeline. No standalone examples exist. See docstring
-    for hp.process() function for more info
     '''
 
     rr_arr = np.array(rr_arr)
@@ -407,20 +366,6 @@ def check_binary_quality(peaklist, binary_peaklist, maxrejects=3, working_data={
     working_data : dict
         working_data dictionary object containing all of heartpy's temp objects
 
-    Examples
-    --------
-    Part of peak detection pipeline. No standalone examples exist. See docstring
-    for hp.process() function for more info
-
-    Given some peaklist and binary mask:
-    >>> peaklist = [30, 60, 90, 110, 130, 140, 160, 170, 200, 220]
-    >>> binary_peaklist = [0, 1, 1, 0, 0, 1, 0, 1, 0, 0]
-    >>> wd = check_binary_quality(peaklist, binary_peaklist)
-    >>> wd['rejected_segments']
-    [(30, 220)]
-
-    The whole segment is rejected as it contains more than the specified 3 rejections
-    per 10 beats.
     '''
     idx = 0
     working_data['rejected_segments'] = []

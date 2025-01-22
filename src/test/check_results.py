@@ -1,6 +1,8 @@
 import json
 import tools
 import pandas as pd
+import ast
+# files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
 files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
 rows = []
 
@@ -72,7 +74,7 @@ df['corr'] = df['corr'].str.rstrip('%').astype(float) / 100
 counts = df['params_hash'].value_counts()
 
 # Get params_hash values that appear at least 9 times
-filtered_hashes = counts[counts >= 9].index.tolist()  # Convert index to list
+filtered_hashes = counts[counts >= 14].index.tolist()  # Convert index to list
 
 # Debug: Check unique counts and selected params_hash values
 print("Total unique 'params_hash' values:", len(counts))
@@ -89,6 +91,19 @@ if filtered_df.empty:
     print("No rows match the filtering criteria. Check for inconsistent data formats.")
 else:
     print("Filtered DataFrame size:", filtered_df.shape)
-best = df[df['params_hash'] == '9fbe500f1966040fdfdf8f25d88375bd47eaea55']
+best = df[df['params_hash'] == 'fbe7bdc645e97035d5b335a45e660d6f1da844f8']
+sum_selected = summary_df[summary_df['params_hash'] == 'c457cd8a5722011f7e87385f6abb3053138bb609']
+
+top_100_df = summary_df.sort_values(by='mean_rmse', ascending=True).head(200)
+top_100_df['hr_std_range'].value_counts()
+top_100_df['window'].value_counts()
+top_100_df['percentile'].value_counts()
+top_100_df['moving_avg_size'].value_counts()
+top_100_df['r_window_avg'].value_counts()
+top_100_df['r_min_periods'].value_counts()
 
 
+
+
+top_100_df.to_csv('/Users/ds/main/8sleep_biometrics/src/test/aggregated_results.csv', index=False)
+df.to_csv('/Users/ds/main/8sleep_biometrics/src/test/all_results.csv', index=False)

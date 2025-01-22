@@ -7,64 +7,95 @@ from analyze import analyze_predictions
 import warnings
 
 from run_data import RuntimeParams
+import pandas as pd
+
+pd.set_option('display.width', 300)
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
-import pandas as pd
+# scp /Users/ds/main/8sleep_biometrics/data/people/tally/raw/tally_piezo_df.feather ds@192.168.50.167:/home/ds/main/8sleep_biometrics/data/people/tally/raw
+# ssh-copy-id -i ~/.ssh/id_rsa.pub ds@192.168.50.167
+
+
+
 
 def main():
-    tally = DataManager('tally', load=True)
-    david = DataManager('david', load=True)
-    david.load_new_raw_data()
-    david.load_new_validation_data()
 
-    trinity = DataManager('trinity', load=True)
-    david = DataManager('david', load=True)
-    data = david
+    trinity = DataManager('trinity')
+    den = DataManager('den')
+    den.heart_rate_df
+    david = DataManager('david')
+    tally = DataManager('tally')
+
+    data_managers = [trinity, tally, david]
+    data = tally
     period = data.sleep_periods[-1]
-    for period in data.sleep_periods:
-        start_time = period['start_time']
-        end_time = period['end_time']
+    for data in data_managers:
+        for period in data.sleep_periods:
+            start_time = period['start_time']
+            end_time = period['end_time']
 
-        runtime_params: RuntimeParams = {
-            'window': 10,
-            'slide_by': 1,
-            'moving_avg_size': 60,
-            'hr_std_range': (1,6),
-            'percentile': (15, 85),
-        }
-        run_data = RunData(
-            data.piezo_df,
-            start_time,
-            end_time,
-            runtime_params=runtime_params,
-            name=data.name,
-            side=period['side'],
-            sensor_count=data.sensor_count,
-            log=True
-        )
+            runtime_params: RuntimeParams = {
+                'window': 6,
+                'slide_by': 1,
+                'moving_avg_size': 100,
+                'hr_std_range': (1,15),
+                'percentile': (20, 80),
+            }
+            run_data = RunData(
+                data.piezo_df,
+                start_time,
+                end_time,
+                runtime_params=runtime_params,
+                name=data.name,
+                side=period['side'],
+                sensor_count=1,
+                label='TALLY_NEW',
+                log=True
+            )
 
-        estimate_heart_rate_intervals(run_data)
+            estimate_heart_rate_intervals(run_data)
 
-        df_pred = run_data.df_pred.copy()
-        df_pred = clean_df_pred(df_pred)
+            df_pred = run_data.df_pred.copy()
+            df_pred = clean_df_pred(df_pred)
 
-        r_window_avg = 20
-        r_min_periods = 20
+            r_window_avg = 15
+            r_min_periods = 10
 
-        df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
+            df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
 
-        df_pred['breathing_rate'] = df_pred['breathing_rate'].rolling(window=40, min_periods=10).mean()
-        df_pred['hrv'] = df_pred['hrv'].rolling(window=40, min_periods=10).mean()
+            df_pred['breathing_rate'] = df_pred['breathing_rate'].rolling(window=40, min_periods=10).mean()
+            df_pred['hrv'] = df_pred['hrv'].rolling(window=40, min_periods=10).mean()
 
-        # run_data.chart_info['r_window_avg'] = r_window_avg
-        # run_data.chart_info['r_min_periods'] = r_window_avg
-        # run_data.chart_info['label'] = 'new'
-
-        run_data.print_results()
-        results = analyze_predictions(data, df_pred, run_data, plot=True)
+            run_data.print_results()
+            results = analyze_predictions(data, df_pred, run_data, plot=True)
 
 
         df = pd.read_pickle('/Users/ds/main/8sleep_biometrics/data/people/den/raw/load/2025-01-20.pkl.zip')
+
+# den = DataManager('den')
+# df = den.heart_rate_df.copy()
+# # df['start_time'] = pd.to_datetime(df['start_time'])
+# #
+# # # Shift 'start_time' by 1 hour
+# # df['start_time'] = df['start_time'] + pd.to_timedelta(1, unit='h')
+# #
+# #
+# # df.head()
+# lower_bound = df['heart_rate_actual'].quantile(0.00)
+# upper_bound = df['heart_rate_actual'].quantile(0.96)
+# # Filter the DataFrame to remove outliers
+# df_filtered = df[(df['heart_rate_actual'] >= lower_bound) & (df['heart_rate_actual'] <= upper_bound)]
+#
+# # Resample data to 10-second intervals without setting index
+# df_resampled = (
+#     df_filtered.groupby(pd.Grouper(key='start_time', freq='120S'))
+#     .agg({'heart_rate_actual': 'mean'})
+#     .reset_index()
+# )
+# df_resampled.dropna(inplace=True)
+# df_resampled.to_csv(den.heart_rate_file_path, index=False)
+# data.heart_rate_df = df_resampled
+#

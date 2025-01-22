@@ -6,7 +6,7 @@ from scipy.interpolate import UnivariateSpline, interp1d
 np.seterr(divide='ignore') #disable div by zero warnings
 np.seterr(invalid='ignore')
 
-from src.heart.filtering import filter_signal
+from heart.filtering import filter_signal
 
 
 __all__ = ['scale_data',
@@ -350,14 +350,6 @@ def enhance_peaks(hrdata, iterations=2):
     out : 1-d numpy array
         array containing enhanced peaks
 
-    Examples
-    --------
-    Given an array of data, the peaks can be enhanced using the function
-
-    >>> x = [200, 300, 500, 900, 500, 300, 200]
-    >>> enhance_peaks(x)
-    array([   0.        ,    4.31776016,   76.16528926, 1024.        ,
-             76.16528926,    4.31776016,    0.        ])
     '''
     scale_data(hrdata)
     for i in range(iterations):
