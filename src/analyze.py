@@ -1,10 +1,13 @@
+"""
+- Plots predictions
+- Analyzes prediction accuracy for heart rate
+"""
 import json
 import gc
-from calculations import RunData
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import MaxNLocator
 import traceback
-from typing import Union, Tuple, TypedDict, Literal, List, Optional
+from typing import Union, TypedDict, Literal, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -213,7 +216,6 @@ def _plot_validation_data(
             s=30,
         )
 
-        # axes[1].set_ylim(45, 90)
         axes[1].set_ylim(estimated_df_resampled['heart_rate'].min() - 2, estimated_df_resampled['heart_rate'].max() + 2)
         axes[1].set_ylabel("Heart Rate (count/min)")
         axes[1].legend(loc='upper left')
@@ -375,7 +377,6 @@ def _calculate_accuracy(data: DataManager, df_pred: pd.DataFrame, column: Evalua
 
 
 
-# def analyze_predictions(data: DataManager, df_pred: pd.DataFrame, start_time: str, end_time: str, run_data: RunData, plot=True) -> Results:
 def analyze_predictions(
         data: DataManager,
         df_pred: pd.DataFrame,
@@ -386,8 +387,6 @@ def analyze_predictions(
 ) -> Results:
     df_pred.sort_values(by=['start_time'], inplace=True)
     df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
-
-    # columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'breathing_rate']
     columns: List[EvaluationMetric] = ['heart_rate']
 
     results: Results = {}

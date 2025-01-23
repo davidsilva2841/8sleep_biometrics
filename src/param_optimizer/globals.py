@@ -1,3 +1,4 @@
+# Global variables for multiprocessing so each process doesn't have to reload the data
 from data_manager import DataManager
 
 david = DataManager('david', load=True)

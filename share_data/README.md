@@ -1,3 +1,5 @@
+# How to share your 8 sleep data with us
+
 1. Copy the .RAW files from your pod (this will ask for the root password you set on your pod)
 ```
 scp -r -P 8822 'root@<POD_IP>:/persistent/*.RAW' <FOLDER_PATH_TO_SAVE_TO_ON_YOUR_COMPUTER>

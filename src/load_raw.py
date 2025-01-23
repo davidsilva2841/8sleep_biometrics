@@ -1,3 +1,6 @@
+"""
+Decodes raw data from 8 sleep pods
+"""
 import tools
 from data_types import *
 from datetime import datetime, timezone

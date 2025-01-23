@@ -1,3 +1,31 @@
+"""
+Manages sleep data by handling raw sensor data and validation data processing.
+
+SENSOR DATA:
+- New raw data should be saved to `8sleep_biometrics/data/people/<PERSON>/raw/load/`.
+- After filtering, data is stored in `8sleep_biometrics/data/people/<PERSON>/raw/<PERSON>_piezo_df.feather`.
+- `DataManager` loads the processed data from the feather file to `DataManager.piezo_df`.
+- Ensure `sleep_data.py` is updated with new sleep periods in UTC format; otherwise, data outside those periods will be excluded.
+
+VALIDATION DATA:
+- Handles 2 types of validation data, apple watch & polar
+- Validation data is saved to 8sleep_biometrics/data/people/<PERSON>/validation/
+
+EXAMPLE USAGE
+    # Copy the raw data from the 8 Sleep Pod
+    $ scp -r -P 8822 'pod2:/persistent/*.RAW' /Users/ds/main/8sleep_biometrics/data/people/david/raw/load
+
+    # Load and process data in Python
+    data = DataManager('david')
+    data.load_raw_data()
+    print(data.piezo_df)
+
+FUNCTIONALITY:
+- Cleans and processes raw sensor data.
+- Filters data based on defined sleep periods.
+- Updates validation datasets for heart rate, HRV, respiratory rate, and sleep stages.
+- Stores cleaned and processed data for further analysis.
+"""
 from typing import List
 import os
 from pathlib import Path
@@ -276,8 +304,6 @@ class DataManager:
 
     def load_piezo_df(self):
         piezo_df = pd.read_feather(self.piezo_df_file_path)
-        # piezo_df['ts'] = pd.to_datetime(piezo_df['ts'])
-        # piezo_df.set_index('ts', inplace=True)
         self.piezo_df = piezo_df
         return piezo_df
 

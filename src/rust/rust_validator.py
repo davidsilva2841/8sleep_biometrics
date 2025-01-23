@@ -1,4 +1,5 @@
-import shutil
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
 
 import pandas as pd
 import itertools
@@ -71,13 +72,14 @@ class RustValidator:
         cmd = [
             self.rust_binary_path,
             input_path,
+            "--feather-input",
             f"--csv-output={output_path}",
             f"--start-time=\"{start_time}\"",
             f"--end-time=\"{end_time}\"",
             f"--hr-window-seconds={params['hr_window_seconds']}",
             f"--hr-window-overlap={params['hr_window_overlap']}",
             f"--br-window-seconds={params['br_window_seconds']}",
-            f"--br-window-overlap={params['br_window_overlap']}",
+            f"--br-wcecindow-overlap={params['br_window_overlap']}",
             f"--harmonic-penalty-close={params['harmonic_penalty_close']}",
             f"--harmonic-penalty-far={params['harmonic_penalty_far']}",
             f"--hr-smoothing-window={params['hr_smoothing_window']}",
@@ -85,6 +87,7 @@ class RustValidator:
             f"--hr-history-window={params['hr_history_window']}",
             f"--hr-outlier-percentile={params['hr_outlier_percentile']}"
         ]
+
         return " ".join(str(x) for x in cmd)
 
     def calculate_metrics(self, df_pred: pd.DataFrame, period: Dict[str, str]) -> Dict[str, Any]:
@@ -95,8 +98,8 @@ class RustValidator:
 
             # Get ground truth data for this period
             ground_truth = self.data_manager.heart_rate_df.copy()
-            ground_truth['start_time'] = pd.to_datetime(ground_truth['startDate'])
-            ground_truth['heart_rate_actual'] = ground_truth['value']
+            ground_truth['start_time'] = pd.to_datetime(ground_truth['start_time'])
+            ground_truth['heart_rate_actual'] = ground_truth['heart_rate_actual']
 
             # Filter ground truth data to period
             period_start = pd.to_datetime(period['start_time'])
@@ -122,8 +125,6 @@ class RustValidator:
                 raise ValueError("No overlapping data points found between predictions and ground truth")
 
             # Calculate metrics exactly as in analyze.py
-            from sklearn.metrics import mean_absolute_error, mean_squared_error
-            import numpy as np
 
             pre_merge_count = len(df_pred)
             post_merge_count = len(merged)
@@ -159,12 +160,12 @@ class RustValidator:
             period_date = period['start_time'][:10]  # Extract YYYY-MM-DD
             raw_data_path = Path(self.data_manager.raw_folder) / period_date
 
-            if not raw_data_path.exists():
-                return {
-                    'params_hash': param_hash,
-                    'error': f"Skipping - No RAW data for {period_date}",
-                    'rust': params
-                }
+            # if not raw_data_path.exists():
+            #     return {
+            #         'params_hash': param_hash,
+            #         'error': f"Skipping - No RAW data for {period_date}",
+            #         'rust': params
+            #     }
 
             # Add time range to parameters
             params_with_time = params.copy()
@@ -174,7 +175,7 @@ class RustValidator:
             # Build and run command
             cmd = self.build_command(
                 params_with_time,
-                str(raw_data_path),
+                self.data_manager.piezo_df_file_path,
                 str(temp_dir / "output")
             )
             try:
@@ -182,11 +183,12 @@ class RustValidator:
                     cmd,
                     shell=True,
                     check=False,
-                    stdout=subprocess.DEVNULL,
+                    # stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
                     text=True
                 )
-
+                print(result.stdout)
+                print(result.stderr)
                 # Check if the process completed successfully
                 if result.returncode != 0:
                     return {
@@ -260,6 +262,7 @@ class RustValidator:
             finally:
                 # Clean up temporary files silently
                 try:
+                    import shutil
                     shutil.rmtree(temp_dir)
                 except:
                     pass
@@ -362,8 +365,8 @@ class RustValidator:
                             print(f"Parameters: {json.dumps(parameter_results[param_hash]['params'], indent=2)}")
 
                 # Print progress after each batch
-                # print(f"\nProgress: {completed_params}/{total_combinations} parameter sets tested")
-                # print(f"Valid parameter sets: {len(results)}/{completed_params}")
+                print(f"\nProgress: {completed_params}/{total_combinations} parameter sets tested")
+                print(f"Valid parameter sets: {len(results)}/{completed_params}")
                 if results:
                     print(f"Current best average MAE: {best_avg_mae:.2f}")
 
@@ -413,7 +416,6 @@ def main():
     if ranked_results:
         print("\nBest parameter combination:")
         print(json.dumps(ranked_results[0], indent=4))
-
 
 if __name__ == "__main__":
     main()

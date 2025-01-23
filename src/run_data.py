@@ -1,14 +1,35 @@
-import gc
+"""
+This module defines the `RunData` class and related data structures for processing physiological measurements.
+
+The `RunData` class is responsible for managing heart rate estimation, data validation, and result aggregation.
+It handles:
+- Initialization with runtime parameters such as window size and sliding intervals.
+- Loading and processing raw piezoelectric sensor data.
+- Estimating heart rate, heart rate variability (HRV), and breathing rate.
+- Handling multiple sensors and combining results from different sources.
+- Logging and performance tracking with built-in timing functions.
+
+Key Data Structures:
+- `Measurement`: Represents an individual measurement record.
+- `Measurements`: Stores a list of `Measurement` records.
+- `ChartLabels`: Provides metadata for visualizing measurement results.
+- `RuntimeParams`: Stores key runtime configurations for the analysis.
+- `ChartInfo`: Aggregates all metadata and configuration parameters.
+
+Example Usage:
+--------------
+    run_data = RunData(piezo_df, '2025-01-10 08:00:00', '2025-01-10 14:00:00', runtime_params)
+    run_data.start_timer()
+    run_data.combine_results()
+    run_data.print_results()
+"""
 import math
 import time
 from datetime import datetime, timedelta
-import numpy as np
-from typing import Union, Tuple, TypedDict
-import heartpy as hp
+from typing import Union, Tuple
 import statistics
 from data_types import *
 import tools
-from heart.filtering import filter_signal
 
 
 class Measurement(TypedDict):
@@ -176,7 +197,6 @@ class RunData:
         self.elapsed_time = self.timer_end - self.timer_start
         self.chart_info['labels']['elapsed'] = self.elapsed_time
         print(f"Timer stopped. Elapsed time: {self.elapsed_time:.2f} seconds.")
-
 
 
     def next(self):

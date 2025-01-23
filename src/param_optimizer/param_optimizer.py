@@ -1,27 +1,80 @@
-# ls -1 results | wc -l
-import gc
-import random
-import numpy as np
-import multiprocessing
-import json
-import itertools
-from calculations import estimate_heart_rate_intervals, RunData
-from analyze import analyze_predictions
-import tools
-import hashlib
-from globals import data_managers
-import traceback
+"""
+This script performs parallelized hyperparameter optimization to find the best combination of parameters
+for identifying heart rate (HR) from 8 Sleep device data.
 
-from config import PROJECT_FOLDER_PATH
+## Overview
+- The script uses multiprocessing to distribute parameter combinations across multiple processes.
+- Heart rate predictions are estimated for different time periods and analyzed for accuracy.
+- Results are saved as JSON files for further analysis.
+
+## Key Features
+1. **Parameter Combination Generation:**
+   - Generates all possible parameter combinations for HR analysis.
+   - Uses itertools to create parameter combinations based on defined ranges.
+
+2. **Parallel Processing:**
+   - Leverages multiprocessing to distribute the workload across multiple CPU cores.
+   - `parallel_predictions()` function splits parameter sets and processes them concurrently.
+
+3. **Heart Rate Estimation Workflow:**
+   - Runs heart rate interval estimations using the `estimate_heart_rate_intervals()` function.
+   - Applies rolling average smoothing to predictions.
+   - Evaluates results using the `analyze_predictions()` function.
+
+4. **Result Storage and Hashing:**
+   - Results are hashed using SHA-1 for consistency and uniqueness.
+   - Each result is saved as a JSON file in the specified project folder.
+
+## Usage
+To run the script, execute it as the main module:
+    python src/param_optimizer/param_optimizer.py.py
+
+
+## Configuration
+The script defines parameter ranges within the `param_grid` dictionary. Users can modify this to experiment
+with different parameter values:
+
+    param_grid = {
+        "slide_by": [1],
+        "window": [6],
+        "hr_std_range": [(1,8), (1,10), (1,12)],
+        "percentile": [(20, 75), (15,80)],
+        "moving_avg_size": [120, 130, 140]
+    }
+
+## Output
+- Processed results are saved as JSON files in the `src/test/results/` directory.
+- Printed logs provide feedback on progress and potential errors.
+
+## Error Handling
+- Any exceptions during processing are caught and logged using traceback for debugging.
+
+"""
+
+
+import gc
+import hashlib
+import itertools
+import json
+import multiprocessing
+import numpy as np
+import random
+import tools
+import traceback
 import warnings
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
-# Define parameter ranges
+
+from analyze import analyze_predictions
+from calculations import estimate_heart_rate_intervals, RunData
+from config import PROJECT_FOLDER_PATH
+from globals import data_managers
 
 
-# ---------------------------------------------------------------------------------------------------
+
+
 def hash_dict(result):
     # Convert dictionary to a JSON string with sorted keys for consistency
     json_str = json.dumps(result, sort_keys=True)
@@ -120,12 +173,13 @@ def parallel_predictions(param_combinations):
 
 
 if __name__ == "__main__":
+    # MUST MATCH RuntimeParams from src/run_data.py
     param_grid = {
         "slide_by": [1],
-        "window": [4, 5, 6, 7, 8],
+        "window": [6],
         "hr_std_range": [(1,8), (1, 10), (1,12), (1, 15), (1, 20)],
-        "percentile": [(17.5, 82.5), (20, 80), (22.5, 77.5), (25, 75)],
-        "moving_avg_size": [100, 120, 130]
+        "percentile": [(20, 75), (20,70), (15,80)],
+        "moving_avg_size": [120, 130, 140]
     }
 
     # Generate all combinations of parameters with named keys

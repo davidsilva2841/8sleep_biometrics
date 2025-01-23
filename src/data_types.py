@@ -92,12 +92,6 @@ class Data(TypedDict):
     errors: List[dict]
 
 
-class NpArrays(TypedDict):
-    left1: np.ndarray
-    left2: np.ndarray
-    right1: np.ndarray
-    right2: np.ndarray
-
 
 
 

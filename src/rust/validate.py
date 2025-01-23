@@ -12,7 +12,7 @@ from calculations import estimate_heart_rate_intervals, RunData
 from analyze import analyze_predictions
 import tools
 import hashlib
-from test.globals import data_managers
+from param_optimizer.globals import data_managers
 import traceback
 import subprocess
 from config import PROJECT_FOLDER_PATH

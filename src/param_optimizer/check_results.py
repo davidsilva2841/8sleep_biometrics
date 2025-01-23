@@ -1,15 +1,8 @@
 import json
 import os
-import os.path
-
-import tools
 import pandas as pd
 import ast
-# files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
-files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
-
-
-
+import tools
 
 
 def build_summary(filtered_df: pd.DataFrame):
@@ -50,6 +43,8 @@ def build_summary(filtered_df: pd.DataFrame):
 
     return summary_df
 
+files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
+
 rows = []
 
 for f in files:
@@ -61,7 +56,6 @@ for f in files:
 
 
 df = pd.DataFrame(rows)
-# df.drop_duplicates(subset=['column1', 'column2'], keep='first', inplace=True)
 df['corr'] = df['corr'].str.rstrip('%').astype(float) / 100
 
 counts = df['params_hash'].value_counts()
@@ -74,14 +68,14 @@ filtered_df = df[df['params_hash'].isin(filtered_hashes)].copy()
 
 counts = df['params_hash'].value_counts()
 
-# Get params_hash values that appear at least 9 times
+# Get params_hash values that appear at least 20 times
 filtered_hashes = counts[counts >= 20].index.tolist()  # Convert index to list
 
 summary_df = build_summary(filtered_df)
 
 
 
-best = df[df['params_hash'] == 'df61844719ffdd6a3156722e548ada2e53f0d1d7']
+best = df[df['params_hash'] == '35cde4e0dfe960f9e49fc90ce801aa4f784014ef']
 sum_selected = summary_df[summary_df['params_hash'] == '0831c421c3c21764421c3cabb4511b56a7527ba0']
 
 top_100_df = summary_df.sort_values(by='mean_rmse', ascending=True).head(100)
@@ -93,7 +87,3 @@ top_100_df['r_window_avg'].value_counts()
 top_100_df['r_min_periods'].value_counts()
 
 
-
-
-# top_100_df.to_csv('/Users/ds/main/8sleep_biometrics/src/test/aggregated_results.csv', index=False)
-# df.to_csv('/Users/ds/main/8sleep_biometrics/src/test/all_results.csv', index=False)

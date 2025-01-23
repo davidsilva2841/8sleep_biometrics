@@ -16,5 +16,6 @@ __pycache__
 *.feather
 
 ._.DS_Store
-/src/test/**/*.json
+/src/param_optimizer/**/*.json
+
 

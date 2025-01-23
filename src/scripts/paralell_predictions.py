@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from test.globals import data_managers
+from param_optimizer.globals import data_managers
 import json
 from data_manager import DataManager, TimePeriod
 from calculations import estimate_heart_rate_intervals, RunData

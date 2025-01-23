@@ -1,3 +1,8 @@
+"""
+Defines sleep data structures and sleep periods for different individuals
+
+This is loaded by DataManager
+"""
 from typing import TypedDict, List, Literal, Dict
 
 
