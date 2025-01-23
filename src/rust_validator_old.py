@@ -13,9 +13,15 @@ BR_WINDOW_OVERLAP_PERCENT=0
 cargo run --release /Users/ds/main/8sleep_biometrics/data/people/tally/raw/loaded/2025-01-21 \
   --csv-output=/Users/ds/main/8sleep_biometrics/predictions/tally_01_21/21 \
   
-cargo run --release "/Users/ds/main/8sleep_biometrics/data/people/tally/raw/loaded/2025-01-21" --start-time="2025-01-21 05:30" --end-time="2025-01-21 14:08" --csv-output="/Users/ds/main/8sleep_biometrics/predictions/tally_01_21/" -- \ 
---hr-window-seconds=10.0 \
---hr-window-overlap=0.67 \
+            
+
+cargo run --bin sleep-decoder --release \
+/Users/ds/main/8sleep_biometrics/data/people/tally/raw/tally_piezo_df.feather \
+--start-time "2025-01-21 05:30" \
+--end-time "2025-01-21 14:08" \
+--csv-output /Users/ds/main/8sleep_biometrics/predictions/tally/01_21 \
+--hr-window-seconds 10.0 \
+--hr-window-overlap 0.67 \
 --br-window-seconds=120.0 \
 --br-window-overlap=0.0 \
 --harmonic-penalty-close=0.7 \
@@ -23,7 +29,8 @@ cargo run --release "/Users/ds/main/8sleep_biometrics/data/people/tally/raw/load
 --hr-smoothing-window=60 \
 --hr-smoothing-strength=0.25 \
 --hr-history-window=180 \
---hr-outlier-percentile=0.01               
+--hr-outlier-percentile=0.01 \
+--feather-input
 
 """
 

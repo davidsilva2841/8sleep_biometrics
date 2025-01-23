@@ -1,4 +1,4 @@
-# ls -1 . | wc -l
+# ls -1 results | wc -l
 import gc
 import random
 import numpy as np
@@ -75,7 +75,7 @@ def run_prediction(param_groups):
                         df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=combo['r_window_avg'], min_periods=combo['r_min_periods']).mean()
 
                         iter_params = {**params, **combo}
-                        analyzed_results = analyze_predictions(data, df_pred, run_data, plot=False)
+                        analyzed_results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=False)
                         result = {
                             **run_data.chart_info['labels'],
                             **run_data.chart_info['runtime_params'],
@@ -134,5 +134,3 @@ if __name__ == "__main__":
 
     param_combinations.reverse()
     r = parallel_predictions(param_combinations)
-#
-#

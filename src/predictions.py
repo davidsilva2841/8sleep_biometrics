@@ -14,36 +14,43 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
-# scp /Users/ds/main/8sleep_biometrics/data/people/tally/raw/tally_piezo_df.feather ds@192.168.50.167:/home/ds/main/8sleep_biometrics/data/people/tally/raw
-# ssh-copy-id -i ~/.ssh/id_rsa.pub ds@192.168.50.167
-
-
-
+david = DataManager('david', load=False)
+# den = DataManager('den', load=True)
+tally = DataManager('tally', load=False)
+trinity = DataManager('trinity', load=False)
+david.load_new_raw_data()
 
 def main():
-
-    den = DataManager('den')
-    den.heart_rate_df
-    david = DataManager('david')
-    david.load_new_raw_data()
-    david.load_new_validation_data()
-    tally = DataManager('tally')
-    trinity.load_new_raw_data()
+    df = david.trim_data()
+    david.piezo_df
+    david.piezo_df.shape
+    df.shape
+    den = DataManager('den', load=True)
+    david = DataManager('david', load=True)
+    tally = DataManager('tally', load=True)
+    trinity = DataManager('trinity', load=True)
+    #  TODO - FIX DEN VALIDATION DATA
     data_managers = [trinity, tally, david]
-    trinity = DataManager('trinity')
-    data = tally
+    piezo_df = pd.read_feather(david.piezo_df_file_path)
+    piezo_df['ts'] = pd.to_datetime(piezo_df['ts'])
+    piezo_df.columns
+    piezo_df.index
+    piezo_df.set_index('ts', inplace=True)
+    tally = DataManager('tally')
+    data = den
     period = data.sleep_periods[-1]
+    tally.load_new_raw_data()
     for data in data_managers:
         for period in data.sleep_periods:
             start_time = period['start_time']
             end_time = period['end_time']
 
             runtime_params: RuntimeParams = {
-                'window': 4,
+                'window': 6,
                 'slide_by': 1,
                 'moving_avg_size': 120,
                 'hr_std_range': (1,10),
-                'percentile': (17.5, 82.5),
+                'percentile': (20, 80),
             }
             run_data = RunData(
                 data.piezo_df,
@@ -53,7 +60,7 @@ def main():
                 name=data.name,
                 side=period['side'],
                 sensor_count=1,
-                label='TALLY_NEW',
+                label='BEST',
                 log=True
             )
 
@@ -62,27 +69,32 @@ def main():
             df_pred = run_data.df_pred.copy()
             df_pred = clean_df_pred(df_pred)
 
-            r_window_avg = 10
-            r_min_periods = 5
+            r_window_avg = 20
+            r_min_periods = 20
 
             df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
 
             df_pred['breathing_rate'] = df_pred['breathing_rate'].rolling(window=40, min_periods=10).mean()
             df_pred['hrv'] = df_pred['hrv'].rolling(window=40, min_periods=10).mean()
-
-            run_data.print_results()
+            # df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
+            # df_pred = (
+            #     df_pred.groupby(pd.Grouper(key='start_time', freq='60s'))
+            #     .agg({'heart_rate': 'mean'})
+            #     .reset_index()
+            # )
             results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=True)
+            run_data.print_results()
 
 
         df = pd.read_pickle('/Users/ds/main/8sleep_biometrics/data/people/den/raw/load/2025-01-20.pkl.zip')
 
 # den = DataManager('den')
 # df = den.heart_rate_df.copy()
-# # df['start_time'] = pd.to_datetime(df['start_time'])
-# #
-# # # Shift 'start_time' by 1 hour
-# # df['start_time'] = df['start_time'] + pd.to_timedelta(1, unit='h')
-# #
+# df['start_time'] = pd.to_datetime(df['start_time'])
+#
+# # Shift 'start_time' by 1 hour
+# df['start_time'] = df['start_time'] + pd.to_timedelta(-1, unit='h')
+#
 # #
 # # df.head()
 # lower_bound = df['heart_rate_actual'].quantile(0.00)
@@ -98,5 +110,5 @@ def main():
 # )
 # df_resampled.dropna(inplace=True)
 # df_resampled.to_csv(den.heart_rate_file_path, index=False)
-# data.heart_rate_df = df_resampled
-#
+# # data.heart_rate_df = df
+

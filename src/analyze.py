@@ -212,7 +212,9 @@ def _plot_validation_data(
             label='Heart Rate',
             s=30,
         )
-        axes[1].set_ylim(45, 90)
+
+        # axes[1].set_ylim(45, 90)
+        axes[1].set_ylim(estimated_df_resampled['heart_rate'].min() - 2, estimated_df_resampled['heart_rate'].max() + 2)
         axes[1].set_ylabel("Heart Rate (count/min)")
         axes[1].legend(loc='upper left')
         axes[1].grid(True)
@@ -299,6 +301,8 @@ def _plot_validation_data(
         mae = results["heart_rate"]['accuracy']["mae"]
         corr = results["heart_rate"]['accuracy']["mae"]
         file_name = f'{data.name}_{end_time[:10]}_mae_{mae}_corr_{corr}.png'
+        if chart_info['labels']['label']:
+            file_name = chart_info['labels']['label'] + '_' + file_name
         save_path = f'{PROJECT_FOLDER_PATH}raw/plots/dump/{file_name}'
         plt.savefig(save_path, bbox_inches="tight", dpi=300)
         plt.show(block=False)

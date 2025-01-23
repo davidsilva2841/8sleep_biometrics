@@ -36,6 +36,7 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-20 07:36:00', 'end_time': '2025-01-20 14:50:00', 'side': 'right'},
             {'start_time': '2025-01-21 06:00:00', 'end_time': '2025-01-21 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-22 06:30:00', 'end_time': '2025-01-22 13:30:00', 'side': 'right'},
+            {'start_time': '2025-01-23 06:30:00', 'end_time': '2025-01-23 14:30:00', 'side': 'right'},
         ]
     },
     'tally': {
@@ -48,6 +49,7 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-19 06:30:00', 'end_time': '2025-01-19 13:30:00', 'side': 'right'},
             {'start_time': '2025-01-20 06:00:00', 'end_time': '2025-01-20 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-21 05:30:00', 'end_time': '2025-01-21 14:08:00', 'side': 'left'},
+            {'start_time': '2025-01-22 05:30:00', 'end_time': '2025-01-22 13:50:00', 'side': 'left'},
         ]
     },
     'trinity': {

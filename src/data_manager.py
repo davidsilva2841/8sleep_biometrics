@@ -205,6 +205,7 @@ class DataManager:
 
 
     def load_new_raw_data(self):
+        print('Checking for new raw files...')
         file_paths = tools.list_dir_files(f'{self.raw_folder}/load', full_path=True)
         file_paths = [file for file in file_paths if file.endswith('.RAW')]
         for file_path in file_paths:
@@ -223,7 +224,7 @@ class DataManager:
                 else:
                     tools.delete_file(new_file_path)
 
-        self.update_piezo_df()
+        self._update_piezo_df()
 
     def _load_new_apple_watch_validation_data(self):
         file_paths = tools.list_dir_files(
@@ -250,7 +251,6 @@ class DataManager:
         self.hrv_df: pd.DataFrame = pd.read_csv(self.hrv_file_path)
         self.sleep_df: pd.DataFrame = pd.read_csv(self.sleep_data_file_path)
 
-
     def _load_new_polar_validation_data(self):
         df = pd.read_csv(f'{self.validation_folder}/load/hr+hrv-polar-h10.csv', sep=';')
         df.rename({
@@ -271,18 +271,15 @@ class DataManager:
         elif self.validation_format == 'polar':
             self._load_new_polar_validation_data()
 
-
     def load_raw_data(self):
         return load_raw_data(folder_path=self.raw_folder_loaded)
 
-
     def load_piezo_df(self):
         piezo_df = pd.read_feather(self.piezo_df_file_path)
-        piezo_df['ts'] = pd.to_datetime(piezo_df['ts'])
-        piezo_df.set_index('ts', inplace=True)
+        # piezo_df['ts'] = pd.to_datetime(piezo_df['ts'])
+        # piezo_df.set_index('ts', inplace=True)
         self.piezo_df = piezo_df
         return piezo_df
-
 
     def _load_pkl_piezo(self) -> pd.DataFrame:
         file_paths = tools.list_dir_files(f'{self.raw_folder}/loaded', full_path=True)
@@ -296,21 +293,50 @@ class DataManager:
         raw_data = load_raw_data(folder_path=self.raw_folder_loaded, piezo_only=True)
         return pd.DataFrame(raw_data['piezo_dual'])
 
-
-    def update_piezo_df(self):
+    def _update_piezo_df(self):
         if self.raw_format == 'raw':
             self.piezo_df = self._load_raw_piezo()
         else:
             self.piezo_df = self._load_pkl_piezo()
 
+        # Ensure ts column is in datetime format before setting index
+        self.piezo_df['ts'] = pd.to_datetime(self.piezo_df['ts'])
+
+        # Sort and set index
         self.piezo_df.sort_values(by='ts', ascending=True, inplace=True)
+        self.piezo_df.set_index('ts', inplace=True)
+
+        # Trim data to sleep periods
+        self.piezo_df = self._trim_piezo_df()
+
+        # Save after trimming to ensure only relevant data is saved
         print(f'Saving df to feather: {self.piezo_df_file_path}')
         self.piezo_df.to_feather(self.piezo_df_file_path)
-        self.piezo_df['ts'] = pd.to_datetime(self.piezo_df['ts'])
-        self.piezo_df.set_index('ts', inplace=True)
+
         return self.piezo_df
 
+    def _trim_piezo_df(self):
+        print('Trimming piezo df to only sleep period data...')
 
+        t0_row_count = self.piezo_df.shape[0]
+        filtered_dfs = []
 
+        for period in self.sleep_periods:
+            start = pd.to_datetime(period['start_time'])
+            end = pd.to_datetime(period['end_time'])
 
+            # Use the index directly for filtering
+            mask = (self.piezo_df.index >= start) & (self.piezo_df.index <= end)
+            filtered_dfs.append(self.piezo_df.loc[mask])
+
+        # Handle empty result case
+        if filtered_dfs:
+            filtered_df = pd.concat(filtered_dfs, ignore_index=False)
+        else:
+            filtered_df = pd.DataFrame(columns=self.piezo_df.columns)
+
+        t1_row_count = filtered_df.shape[0]
+        print(f'Deleted {t0_row_count - t1_row_count:,} extra rows | Remaining rows: {t1_row_count:,}')
+
+        return filtered_df
 

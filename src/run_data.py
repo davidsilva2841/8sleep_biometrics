@@ -32,6 +32,9 @@ class ChartLabels(TypedDict, total=False):
     label: str
     elapsed: float
 
+class PostRuntimeParams(TypedDict):
+    r_window_avg: int
+    r_min_periods: int
 
 class RuntimeParams(TypedDict):
     window: int
