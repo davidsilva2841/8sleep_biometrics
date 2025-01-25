@@ -9,6 +9,7 @@ from matplotlib.ticker import MaxNLocator
 import traceback
 from typing import Union, TypedDict, Literal, List, Optional
 
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -17,7 +18,9 @@ from config import PROJECT_FOLDER_PATH
 
 from data_manager import DataManager
 from run_data import ChartInfo
+
 # ---------------------------------------------------------------------------------------------------
+# region Types
 
 EvaluationMetric = Literal['heart_rate', 'hrv', 'sleep_stage', 'breathing_rate']
 
@@ -47,9 +50,10 @@ class Results(TypedDict):
     sleep_stage: Optional[EvaluationMetrics]
     breathing_rate: Optional[EvaluationMetrics]
 
+# endregion
+
 
 # ---------------------------------------------------------------------------------------------------
-
 # region PLOTTING
 
 def _plot_validation_data(
@@ -285,7 +289,7 @@ def _plot_validation_data(
                     ha='left', va='top', fontsize=16, family='monospace'
                 )
             if 'runtime_params' in chart_info:
-                labels = "RUNTIME PARAMETERS\n" + "\n".join(f"{key.ljust(14)}: {value}" for key, value in chart_info['runtime_params'].items())
+                labels = "RUNTIME PARAMETERS\n" + "\n".join(f"{key.ljust(17)}: {value}" for key, value in chart_info['runtime_params'].items())
                 fig.text(
                     0.30, 0.15, # Position: x, y (centered horizontally below the chart)
                     labels,
@@ -295,23 +299,28 @@ def _plot_validation_data(
             accuracy = results['heart_rate']['accuracy']
             stats_text = "HEART RATE ACCURACY\n" + "\n".join(f"{key.ljust(6)}: {value}" for key, value in accuracy.items())
             fig.text(
-                0.53, 0.15, # Position: x, y (centered horizontally below the chart)
+                0.57, 0.15, # Position: x, y (centered horizontally below the chart)
                 stats_text,
                 ha='left', va='top', fontsize=16, family='monospace'
             )
 
-        mae = results["heart_rate"]['accuracy']["mae"]
-        corr = results["heart_rate"]['accuracy']["mae"]
-        file_name = f'{data.name}_{end_time[:10]}_mae_{mae}_corr_{corr}.png'
+        rmse = results["heart_rate"]['accuracy']["rmse"]
+        corr = results["heart_rate"]['accuracy']["corr"]
+        file_name = f'{data.name}_{end_time[:10]}_rmse_{rmse}_corr_{corr}.png'
         if chart_info['labels']['label']:
             file_name = chart_info['labels']['label'] + '_' + file_name
-        save_path = f'{PROJECT_FOLDER_PATH}raw/plots/dump/{file_name}'
+        save_path = f'{PROJECT_FOLDER_PATH}tmp/plots/{file_name}'
+        print(f'Saving plot to: {save_path}')
         plt.savefig(save_path, bbox_inches="tight", dpi=300)
         plt.show(block=False)
     except Exception as e:
         print('ERROR -----------------------------------------------------------------------------------------------------')
         print(e)
         traceback.print_exc()
+
+
+
+
 
 # endregion
 
@@ -387,6 +396,9 @@ def analyze_predictions(
 ) -> Results:
     df_pred.sort_values(by=['start_time'], inplace=True)
     df_pred['start_time'] = pd.to_datetime(df_pred['start_time'])
+
+    # Only concerned with heart rate now
+    # columns: List[EvaluationMetric] = ['heart_rate', 'hrv', 'sleep_stage', 'breathing_rate']
     columns: List[EvaluationMetric] = ['heart_rate']
 
     results: Results = {}
@@ -394,6 +406,7 @@ def analyze_predictions(
         results[column] = _calculate_accuracy(data, df_pred, column)
 
     if plot:
+        print('-----------------------------------------------------------------------------------------------------')
         _plot_validation_data(start_time, end_time, data, df_pred, chart_info, results=results)
         print(json.dumps(results, indent=4))
 

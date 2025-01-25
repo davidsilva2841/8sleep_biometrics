@@ -2,7 +2,6 @@
 
 ```
 conda env create -f environment.yml
-pip install -r requirements.txt
 conda develop src/
 conda develop toolkit/
 ```
@@ -32,7 +31,7 @@ contributions of the original author and related research publications:
 ```
 8sleep_biometrics/
 │-- src/
-│   │-- predictions.py        # Main script for running heart rate predictions
+│   │-- predictions.py        # (START HERE) Main script for running heart rate predictions
 │   │-- data_manager.py       # Handles loading and cleaning data
 │   │-- data_types.py         # Type definitions for raw data from 8 sleep
 │   │-- calculations.py       # Core calculations and heart rate estimation
@@ -40,26 +39,25 @@ contributions of the original author and related research publications:
 │   │-- run_data.py           # Data structures for managing run parameters
 │   │-- rust/                 # Rust model validation scripts (external repo)
 │   └-- param_optimizer/      # Scripts for hyperparameter tuning
-│-- data/                     # Raw and processed data storage
-data/
+
+data/                         # Raw and processed data storage
 │-- people/
 │   │-- david/
 │   │   │-- raw/
-│   │   │   │-- load/             # Folder for new raw data uploads
-│   │   │   └-- loaded/            # Processed and filtered raw data
-│   │   │       └-- david_piezo_df.feather  # Processed piezoelectric sensor data
+│   │   │   │-- load/         # Folder for new raw data uploads (original data is cbor encoded)
+│   │   │   |-- loaded/       # Raw files renamed and grouped into folders by date
+│   │   │   |   └-- 2025-01-01/       
+│   │   │   |       └-- 2025-01-10 05.00.22___2025-01-10 05.15.21.RAW       
+│   │   │   └-- david_piezo_df.feather  # Processed piezoelectric sensor data
 │   │   │
 │   │   └-- validation/
-│   │       │-- load/              # Folder for uploading new validation data
-│   │       ├-- david_breath_rate.csv   # Processed breathing rate data
-│   │       ├-- david_heart_rate.csv    # Processed heart rate data
-│   │       ├-- david_hrv.csv           # Processed heart rate variability (HRV) data
-│   │       └-- david_sleep.csv         # Processed sleep stage data
+│   │       │-- load/                   # Folder for uploading new validation data
+│   │       ├-- david_breath_rate.csv   # Validation breathing rate data
+│   │       ├-- david_heart_rate.csv    # Validation heart rate data
+│   │       ├-- david_hrv.csv           # Validation heart rate variability (HRV) data
+│   │       └-- david_sleep.csv         # Validation sleep stage data
 ```
 
-## Configuration
-
-The `data_manager.py` handles the configuration and loading of data, ensuring it matches the defined sleep periods in `sleep_data.py`.
 
 ### Adding New Data
 

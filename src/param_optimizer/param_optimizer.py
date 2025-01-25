@@ -37,10 +37,12 @@ with different parameter values:
     param_grid = {
         "slide_by": [1],
         "window": [6],
-        "hr_std_range": [(1,8), (1,10), (1,12)],
-        "percentile": [(20, 75), (15,80)],
+        "hr_std_range": [(1, 15)],
+        "hr_percentile": [(15,80)],
+        "signal_percentile": [(1, 99), (2,98), (3,97), (5, 95)],
         "moving_avg_size": [120, 130, 140]
     }
+
 
 ## Output
 - Processed results are saved as JSON files in the `src/test/results/` directory.
@@ -140,7 +142,7 @@ def run_prediction(param_groups):
                         result['params_hash'] = params_hash
 
                         json_file_name = hash_dict(result)
-                        file_path = f'{PROJECT_FOLDER_PATH}src/test/results/{json_file_name}.json'
+                        file_path = f'{PROJECT_FOLDER_PATH}src/param_optimizer/results/{json_file_name}.json'
                         print(f'Saving result to json file: {file_path}')
                         tools.write_json_to_file(file_path, result)
                         print('DONE FOR -----------------------------------------------------------------------------------------------------')
@@ -176,10 +178,11 @@ if __name__ == "__main__":
     # MUST MATCH RuntimeParams from src/run_data.py
     param_grid = {
         "slide_by": [1],
-        "window": [6],
-        "hr_std_range": [(1,8), (1, 10), (1,12), (1, 15), (1, 20)],
-        "percentile": [(20, 75), (20,70), (15,80)],
-        "moving_avg_size": [120, 130, 140]
+        "window": [6, 10],
+        "hr_std_range": [(1, 15)],
+        "hr_percentile": [(15,80), (20, 75), (25,75)],
+        "signal_percentile": [(0.5, 99.5), (1, 99)],
+        "moving_avg_size": [120, 130]
     }
 
     # Generate all combinations of parameters with named keys

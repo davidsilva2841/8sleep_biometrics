@@ -13,6 +13,8 @@ Key Functions:
 """
 import gc
 from run_data import RunData
+import traceback
+
 from data_types import *
 from heart.filtering import filter_signal, remove_baseline_wander
 from heart.preprocessing import scale_data
@@ -66,9 +68,16 @@ def clean_df_pred(df_pred: pd.DataFrame) -> pd.DataFrame:
 
 
 def _calculate(run_data: RunData, side: str):
+    # Get the signal
     np_array = np.concatenate(run_data.piezo_df[run_data.start_interval:run_data.end_interval][side])
 
-    data = interpolate_outliers_in_wave(np_array, 2)
+    # Remove outliers from signal
+    data = interpolate_outliers_in_wave(
+        np_array,
+        lower_percentile=run_data.signal_percentile[0],
+        upper_percentile=run_data.signal_percentile[1]
+    )
+
     data = scale_data(data, lower=0, upper=1024)
     data = remove_baseline_wander(data, sample_rate=500.0, cutoff=0.05)
 
@@ -87,12 +96,12 @@ def _calculate(run_data: RunData, side: str):
         breathing_method='fft',
         bpmmin=40,
         bpmmax=90,
-        hampel_correct=False,  # KEEP FALSE - Takes too long
+        hampel_correct=False,      # KEEP FALSE - Takes too long
         reject_segmentwise=False,  # KEEP FALSE - Less accurate
         windowsize=0.50,
-        clipping_scale=False,  # KEEP FALSE - Did not change reading
-        clean_rr=True,  # KEEP TRUE - More accurate
-        clean_rr_method='quotient-filter',  # z-score is worse
+        clipping_scale=False,
+        clean_rr=True,
+        clean_rr_method='quotient-filter',
     )
     if run_data.is_valid(measurement):
         return {
@@ -106,6 +115,23 @@ def _calculate(run_data: RunData, side: str):
 
 
 def estimate_heart_rate_intervals(run_data: RunData):
+    """
+    Estimates heart rate intervals using the given RunData object.
+
+    Parameters:
+    -----------
+    run_data : RunData
+        The data structure containing sleep data, sensor readings, and runtime parameters.
+
+    Returns:
+    --------
+    None
+        Results are stored in `run_data.df_pred`.
+
+    Example:
+    --------
+    >>> estimate_heart_rate_intervals(run_data)
+    """
     print('-----------------------------------------------------------------------------------------------------')
     print(f'Estimating heart rate for {run_data.name} {run_data.start_time} -> {run_data.end_time}')
 
@@ -119,26 +145,20 @@ def estimate_heart_rate_intervals(run_data: RunData):
             # traceback.print_exc()
             # WARNING: DEBUGGING - ERRORS HERE FAIL SILENTLY FOR SPEED - Uncomment line above for debugging
 
-        # elif measurement_1 is not None:
         if measurement_1 is not None:
             run_data.measurements_side_1.append(measurement_1)
-            run_data.sensor_2_drop_count += 1
             m1_heart_rate = measurement_1['heart_rate']
 
-            if run_data.hr_moving_avg is not None:
-                heart_rate = (m1_heart_rate + run_data.hr_moving_avg) / 2
-            else:
-                heart_rate = m1_heart_rate
-
-            if run_data.hr_moving_avg is not None and abs(heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
-                if heart_rate < run_data.hr_moving_avg:
-                    heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
+            # If the HR differs by more than the allowable movement
+            if run_data.hr_moving_avg is not None and abs(m1_heart_rate - run_data.hr_moving_avg) > run_data.hr_std_2:
+                if m1_heart_rate < run_data.hr_moving_avg:
+                    m1_heart_rate = run_data.hr_moving_avg - run_data.hr_std_2
                 else:
-                    heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
+                    m1_heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
-            run_data.heart_rates.append(heart_rate)
+            run_data.heart_rates.append(m1_heart_rate)
 
-            measurement_1['heart_rate'] = heart_rate
+            measurement_1['heart_rate'] = m1_heart_rate
             run_data.combined_measurements.append(measurement_1)
 
         run_data.next()

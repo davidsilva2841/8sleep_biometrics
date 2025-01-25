@@ -11,6 +11,7 @@ class TimePeriod(TypedDict):
     end_time: str
     side: Literal['left', 'right']
 
+Name = Literal['david', 'den', 'tally', 'trinity']
 ValidationFormat = Literal['apple_watch', 'polar']
 RawFormat = Literal['raw', 'pkl']
 
@@ -21,7 +22,7 @@ class SleepEntry(TypedDict):
     raw_format: RawFormat
 
 
-SleepDataType = Dict[str, SleepEntry]
+SleepDataType = Dict[Name, SleepEntry]
 
 SLEEP_DATA: SleepDataType = {
     'david': {
@@ -42,6 +43,15 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-21 06:00:00', 'end_time': '2025-01-21 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-22 06:30:00', 'end_time': '2025-01-22 13:30:00', 'side': 'right'},
             {'start_time': '2025-01-23 06:30:00', 'end_time': '2025-01-23 14:30:00', 'side': 'right'},
+            {'start_time': '2025-01-24 07:00:00', 'end_time': '2025-01-24 14:45:00', 'side': 'right'},
+        ]
+    },
+    'den': {
+        'validation_format': 'polar',
+        'sensor_count': 1,
+        'raw_format': 'pkl',
+        'sleep_periods': [
+            {'start_time': '2025-01-21 02:47:00', 'end_time': '2025-01-21 09:38:00', 'side': 'right'},
         ]
     },
     'tally': {
@@ -55,6 +65,8 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-20 06:00:00', 'end_time': '2025-01-20 14:00:00', 'side': 'right'},
             {'start_time': '2025-01-21 05:30:00', 'end_time': '2025-01-21 14:08:00', 'side': 'left'},
             {'start_time': '2025-01-22 05:30:00', 'end_time': '2025-01-22 13:50:00', 'side': 'left'},
+            {'start_time': '2025-01-23 06:00:00', 'end_time': '2025-01-23 13:45:00', 'side': 'left'},
+            {'start_time': '2025-01-24 05:35:00', 'end_time': '2025-01-24 14:00:00', 'side': 'left'},
         ]
     },
     'trinity': {
@@ -66,13 +78,5 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-22 00:06:00', 'end_time': '2025-01-22 06:42:00', 'side': 'left'},
         ]
     },
-    'den': {
-        'validation_format': 'polar',
-        'sensor_count': 1,
-        'raw_format': 'pkl',
-        'sleep_periods': [
-            {'start_time': '2025-01-21 02:47:00', 'end_time': '2025-01-21 09:38:00', 'side': 'right'},
-        ]
-    }
 }
 

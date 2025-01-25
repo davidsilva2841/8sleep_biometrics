@@ -17,8 +17,9 @@ EXAMPLE USAGE
 
     # Load and process data in Python
     data = DataManager('david')
-    data.load_raw_data()
-    print(data.piezo_df)
+
+    data.piezo_df       # Sensor data
+    data.sleep_periods
 
 FUNCTIONALITY:
 - Cleans and processes raw sensor data.
@@ -33,12 +34,16 @@ import re
 import pandas as pd
 
 import tools
+from data_types import Data
 from load_raw import load_raw_data
-from sleep_data import SLEEP_DATA, TimePeriod, ValidationFormat, RawFormat
+from sleep_data import SLEEP_DATA, TimePeriod, ValidationFormat, RawFormat, Name
 from config import PROJECT_FOLDER_PATH
 
 
 
+# ---------------------------------------------------------------------------------------------------
+# region Helper functions
+# Basic util helper functions for DataManager
 
 def _clean_files(file_paths):
     for file_path in file_paths:
@@ -52,7 +57,6 @@ def _clean_files(file_paths):
         data = data.replace("'", '')
         data = data.replace(" +0000", '')
         tools.write_to_file(file_path, data)
-
 
 
 def _filter_time(df: pd.DataFrame) -> pd.DataFrame:
@@ -157,7 +161,6 @@ def _update_heart_rate(file_path, output_path):
     print(f'Saved heart rate to: {output_path}')
 
 
-
 def _update_breath_rate(file_path, output_path):
     print(f'Updating breath: {file_path}')
     dfs = []
@@ -183,15 +186,14 @@ def _update_breath_rate(file_path, output_path):
     combined_df.to_csv(output_path, index=False)
     print(f'Saved breath rate to: {output_path}')
 
-
-
-
+# endregion
+# ---------------------------------------------------------------------------------------------------
 
 
 class DataManager:
     piezo_df: pd.DataFrame
 
-    def __init__(self, name: str, load=True, new=False):
+    def __init__(self, name: Name, load=True, new=False):
         self.folder_path: str = f'{PROJECT_FOLDER_PATH}data/people/{name}/'
         self.raw_folder: str = f'{self.folder_path}raw/'
         self.raw_folder_loaded: str = f'{self.raw_folder}loaded/'
@@ -222,11 +224,9 @@ class DataManager:
             self.sleep_df: pd.DataFrame = pd.read_csv(self.sleep_data_file_path)
             self.breath_rate_df['start_time'] = pd.to_datetime(self.breath_rate_df['start_time'])
             self.sleep_df['start_time'] = pd.to_datetime(self.sleep_df['start_time'])
-
         else:
             self.breath_rate_df = pd.DataFrame()
             self.sleep_df = pd.DataFrame()
-
 
         if load and not new:
             self.load_piezo_df()
@@ -254,7 +254,9 @@ class DataManager:
 
         self._update_piezo_df()
 
+
     def _load_new_apple_watch_validation_data(self):
+        print(f'Loading apple watch validation data for: {self.name}')
         file_paths = tools.list_dir_files(
             f'{self.validation_folder}load/',
             full_path=True
@@ -279,6 +281,7 @@ class DataManager:
         self.hrv_df: pd.DataFrame = pd.read_csv(self.hrv_file_path)
         self.sleep_df: pd.DataFrame = pd.read_csv(self.sleep_data_file_path)
 
+
     def _load_new_polar_validation_data(self):
         df = pd.read_csv(f'{self.validation_folder}/load/hr+hrv-polar-h10.csv', sep=';')
         df.rename({
@@ -293,19 +296,24 @@ class DataManager:
 
         return df
 
+
     def load_new_validation_data(self):
         if self.validation_format == 'apple_watch':
             self._load_new_apple_watch_validation_data()
         elif self.validation_format == 'polar':
             self._load_new_polar_validation_data()
 
-    def load_raw_data(self):
+
+    def load_raw_data(self) -> Data:
+        """Loads the raw data from 8 sleep"""
         return load_raw_data(folder_path=self.raw_folder_loaded)
+
 
     def load_piezo_df(self):
         piezo_df = pd.read_feather(self.piezo_df_file_path)
         self.piezo_df = piezo_df
         return piezo_df
+
 
     def _load_pkl_piezo(self) -> pd.DataFrame:
         file_paths = tools.list_dir_files(f'{self.raw_folder}/loaded', full_path=True)
@@ -315,9 +323,11 @@ class DataManager:
         df = pd.concat(dfs)
         return df
 
+
     def _load_raw_piezo(self) -> pd.DataFrame:
         raw_data = load_raw_data(folder_path=self.raw_folder_loaded, piezo_only=True)
         return pd.DataFrame(raw_data['piezo_dual'])
+
 
     def _update_piezo_df(self):
         if self.raw_format == 'raw':
@@ -340,6 +350,7 @@ class DataManager:
         self.piezo_df.to_feather(self.piezo_df_file_path)
 
         return self.piezo_df
+
 
     def _trim_piezo_df(self):
         print('Trimming piezo df to only sleep period data...')

@@ -24,26 +24,27 @@ def build_summary(filtered_df: pd.DataFrame):
 
     param_columns = [
         'params_hash', 'window', 'slide_by', 'moving_avg_size',
-        'hr_std_range', 'percentile', 'r_window_avg', 'r_min_periods'
+        'hr_std_range', 'hr_percentile', 'r_window_avg', 'r_min_periods', 'signal_percentile'
     ]
 
     # Convert unhashable list columns to strings
     filtered_df.loc[:, 'hr_std_range'] = filtered_df['hr_std_range'].apply(lambda x: str(x) if isinstance(x, list) else x)
-    filtered_df.loc[:, 'percentile'] = filtered_df['percentile'].apply(lambda x: str(x) if isinstance(x, list) else x)
+    filtered_df.loc[:, 'hr_percentile'] = filtered_df['hr_percentile'].apply(lambda x: str(x) if isinstance(x, list) else x)
+    filtered_df.loc[:, 'signal_percentile'] = filtered_df['signal_percentile'].apply(lambda x: str(x) if isinstance(x, list) else x)
 
     # Drop duplicates to get unique parameter combinations
     df_params = filtered_df.loc[:, param_columns].drop_duplicates()
 
     # Convert back list columns if needed
+    df_params['hr_percentile'] = df_params['hr_percentile'].apply(ast.literal_eval)
     df_params['hr_std_range'] = df_params['hr_std_range'].apply(ast.literal_eval)
-    df_params['percentile'] = df_params['percentile'].apply(ast.literal_eval)
 
     # Merge summaries with unique parameter values
     summary_df = summary_df.merge(df_params, on='params_hash', how='left')
 
     return summary_df
 
-files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/src/test/results', full_path=True)
+files = tools.list_dir_files('./results', full_path=True)
 
 rows = []
 
@@ -56,6 +57,8 @@ for f in files:
 
 
 df = pd.DataFrame(rows)
+df.dropna(subset=['hr_percentile'], inplace=True)
+
 df['corr'] = df['corr'].str.rstrip('%').astype(float) / 100
 
 counts = df['params_hash'].value_counts()
@@ -75,15 +78,17 @@ summary_df = build_summary(filtered_df)
 
 
 
-best = df[df['params_hash'] == '35cde4e0dfe960f9e49fc90ce801aa4f784014ef']
+best = df[df['params_hash'] == 'd9a8fc7e39d864200a4cf9c85d9ab966f0f6b949']
 sum_selected = summary_df[summary_df['params_hash'] == '0831c421c3c21764421c3cabb4511b56a7527ba0']
 
 top_100_df = summary_df.sort_values(by='mean_rmse', ascending=True).head(100)
-top_100_df['hr_std_range'].value_counts()
 top_100_df['window'].value_counts()
-top_100_df['percentile'].value_counts()
+top_100_df['hr_std_range'].value_counts()
+top_100_df['hr_percentile'].value_counts()
+top_100_df['signal_percentile'].value_counts()
 top_100_df['moving_avg_size'].value_counts()
 top_100_df['r_window_avg'].value_counts()
+top_100_df['r_min_periods'].value_counts()
 top_100_df['r_min_periods'].value_counts()
 
 
