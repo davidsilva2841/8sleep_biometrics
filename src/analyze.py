@@ -122,7 +122,8 @@ def _plot_validation_data(
             sleep_stage_map = {
                 'awake': 0,
                 'asleepCore': 1,
-                'asleepREM': 2,
+                'asleepDeep': 2,
+                'asleepREM': 3,
             }
             sleep_df_copy = data.sleep_df.copy()
             sleep_df_copy['sleep_stage_actual'] = sleep_df_copy['sleep_stage_actual'].map(sleep_stage_map)
@@ -259,9 +260,9 @@ def _plot_validation_data(
             axes[3].set_ylabel("Sleep Stage\n(0=awake,1=core,2=rem)")
             axes[3].legend(loc='upper left')
             axes[3].grid(True)
-            axes[3].set_ylim(0, 3)
+            axes[3].set_ylim(0, 4)
             axes[3].yaxis.set_major_locator(MaxNLocator(integer=True))
-            sleep_stage_labels = ['Awake', 'Core', 'REM', '']
+            sleep_stage_labels = ['Awake', 'Core', 'Deep', 'REM', '']
             axes[3].set_yticks(range(len(sleep_stage_labels)))
             axes[3].set_yticklabels(sleep_stage_labels)
 
