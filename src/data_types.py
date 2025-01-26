@@ -11,7 +11,7 @@ pd.set_option('display.width', 300)
 # endregion
 
 # ---------------------------------------------------------------------------------------------------
-# region TYPES
+# See all the different logs in ./decoded_raw_data_samples/logs.json
 
 class LogData(TypedDict):
     type: str
@@ -20,6 +20,10 @@ class LogData(TypedDict):
     msg: str
     seq: int
 
+
+
+# ---------------------------------------------------------------------------------------------------
+# Piezo sensor data (used for heart rates, hrv - ???)
 
 class PiezoDualData(TypedDict):
     type: str
@@ -33,6 +37,29 @@ class PiezoDualData(TypedDict):
     right2: np.ndarray
     seq: int
 
+# {
+#     "adc": 1,
+#     "freq": 500,
+#     "gain": 400,
+#     "left1": [
+#         -160889, -163532, -161494, -162596, -163266, -163120, -163281,   ...... (500 values)
+#     ],
+#     "left2": [
+#         -4788, -4841, -7013, -6902, -9195, -9662, -11273, -9883, -11415, ...... (500 values)
+#     ],
+#     "right1": [
+#         544338, 543290, 540837, 541583, 541184, 539035, 538201, 537129,  ...... (500 values)
+#     ],
+#     "right2": [
+#         722955, 723792, 724770, 727022, 727501, 728404, 728542, 728296,  ...... (500 values)
+#     ],
+#     "seq": 1610681,
+#     "ts": "2025-01-10 11:00:22",
+#     "type": "piezo-dual"
+# }
+
+# ---------------------------------------------------------------------------------------------------
+# Capacitance sensor - Used for presence detection (I think)
 
 class CapSenseChannel(TypedDict):
     out: int
@@ -48,6 +75,26 @@ class CapSenseData(TypedDict):
     right: CapSenseChannel
     seq: int
 
+# {
+#   "type": "capSense",
+#   "ts": "2025-01-10 11:00:22",
+#   "left": {
+#     "out": 387,
+#     "cen": 381,
+#     "in": 505,
+#     "status": "good"
+#   },
+#   "right": {
+#     "out": 1076,
+#     "cen": 1075,
+#     "in": 1074,
+#     "status": "good"
+#   },
+#   "seq": 1610679
+# }
+
+# ---------------------------------------------------------------------------------------------------
+# Freeze temps - Temperature measurements
 
 class FrzTempData(TypedDict):
     type: str
@@ -75,6 +122,19 @@ class BedTempData(TypedDict):
     left: BedTempChannel
     right: BedTempChannel
     seq: int
+
+# {
+#     "amb": 2168,
+#     "hs": 3168,
+#     "left": 1975,
+#     "right": 1981,
+#     "seq": 1610686,
+#     "ts": "2025-01-10 11:00:28",
+#     "type": "frzTemp"
+# }
+
+# ---------------------------------------------------------------------------------------------------
+
 
 
 class RawRow(TypedDict):

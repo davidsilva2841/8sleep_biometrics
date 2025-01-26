@@ -1,0 +1,324 @@
+[
+  {
+    "type": "log",
+    "ts": "2025-01-10 06:21:40",
+    "level": "debug",
+    "msg": "425188067 frozen.cpp:312 handleCommand|[frozen] -> FW: water full",
+    "seq": 1553978
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 07:21:29",
+    "level": "info",
+    "msg": "428777886 Thermostat.cpp:348 setHeatingLevel|set target temp (L: -60, 19.80C)",
+    "seq": 1566144
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 10:15:31",
+    "level": "debug",
+    "msg": "439219213 Sensor.cpp:546 handleCommand|[sensor] -> FW: HWINFO sn 00024f0b pn 20600 sku 2 hw 0731 f 1 d 170b1b",
+    "seq": 1601566
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 10:25:46",
+    "level": "info",
+    "msg": "439834068 CloudTracing.cpp:26 vtraceln|[cloud] [Upload] Start Batch timeout",
+    "seq": 1603646
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:00:24",
+    "level": "debug",
+    "msg": "441912614 Sensor.cpp:1169 probeTemps|[sensor] temp probe",
+    "seq": 1610680
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:00:28",
+    "level": "debug",
+    "msg": "441916857 Sensor.cpp:1298 keepAlive|[sensor]wrote heartbeat 14729",
+    "seq": 1610696
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:00:31",
+    "level": "debug",
+    "msg": "441919247 Sensor.cpp:546 handleCommand|[sensor] -> FW: [cap_sense] 3.8622 3.7905 5.0666 10.7560 10.7721 10.7802",
+    "seq": 1610709
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:00:36",
+    "level": "debug",
+    "msg": "441924168 AsioTcpClient.h:63 tryConnect|[asiotcp] resolved raw-api-upload.8slp.net:1337. connected? y",
+    "seq": 1610728
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:00:58",
+    "level": "debug",
+    "msg": "441946331 frozen.cpp:271 handleCommand|[frozen] -> FW: pid[right] 19.812500 -0.594065 -0.006750 -0.574815 -0.01250",
+    "seq": 1610795
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:01:00",
+    "level": "debug",
+    "msg": "441948622 frozen.cpp:271 handleCommand|[frozen] -> FW: [bk-fan] 0.386250",
+    "seq": 1610814
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:01:05",
+    "level": "debug",
+    "msg": "441953747 Sensor.cpp:546 handleCommand|[sensor] -> FW: multi sample errors: 0, incomplete sample errors: 0",
+    "seq": 1610815
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:01:08",
+    "level": "debug",
+    "msg": "441956113 frozen.cpp:295 handleCommand|[frozen] -> FW: temps 19.75 19.75 21.68 31.62",
+    "seq": 1610830
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:01:18",
+    "level": "debug",
+    "msg": "441966214 frozen.cpp:271 handleCommand|[frozen] -> FW: [float_valve] solenoid_current @ 0.006771A",
+    "seq": 1610867
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:02:05",
+    "level": "debug",
+    "msg": "442013747 Sensor.cpp:546 handleCommand|[sensor] -> FW: sampling overflows: 50947, no data: 14, crc mismatch: 0",
+    "seq": 1611018
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:02:05",
+    "level": "debug",
+    "msg": "442013751 Sensor.cpp:546 handleCommand|[sensor] -> FW: samples with >1.0000ms drift: 0, avg drift/sample: 0.0000ms",
+    "seq": 1611027
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:02:10",
+    "level": "debug",
+    "msg": "442018678 frozen.cpp:271 handleCommand|[frozen] -> FW: [hs-fan] 0.605000",
+    "seq": 1611046
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:02:26",
+    "level": "debug",
+    "msg": "442034184 AsioUploader.h:151 manageFileBuffer|[Upload] Deleting -> 0012A066.RAW",
+    "seq": 1611101
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:02:58",
+    "level": "debug",
+    "msg": "442066625 frozen.cpp:271 handleCommand|[frozen] -> FW: [stats] avg:12ms max:384ms min:0ms",
+    "seq": 1611204
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:04:05",
+    "level": "debug",
+    "msg": "442133831 Sensor.cpp:546 handleCommand|[sensor] -> FW: samples queued: 221002643, por errors: 0, invalid ch id: 0",
+    "seq": 1611434
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:04:08",
+    "level": "debug",
+    "msg": "442136316 frozen.cpp:271 handleCommand|[frozen] -> FW: pump[left] slow @ 6.534320V 0.224692A",
+    "seq": 1611443
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:04:58",
+    "level": "debug",
+    "msg": "442186520 frozen.cpp:271 handleCommand|[frozen] -> FW: pid[left] 19.812500 -0.305011 -0.006750 -0.235761 -0.062500",
+    "seq": 1611605
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:06:24",
+    "level": "debug",
+    "msg": "442272655 Sensor.cpp:298 logBedtemp|[Bedtemp] L[2029] 2017 2022 2036 R[2506] 2655 2420 2049 AMB 2279 36% MCU 2659",
+    "seq": 1611917
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:06:31",
+    "level": "debug",
+    "msg": "442279243 Sensor.cpp:546 handleCommand|[sensor] -> FW: [ambient] temp 22.7880 humidity 36.9611 percent",
+    "seq": 1611925
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:06:33",
+    "level": "warn",
+    "msg": "442281669 raw_ext_adc_buffer.h:140 cbor_encode|[logger] flushing 499 samples",
+    "seq": 1611951
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:09:32",
+    "level": "warn",
+    "msg": "442460948 sensor_timing.cpp:45 getRefMillis|[sensor] sample lost 442441749 cur 442441752",
+    "seq": 1612560
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 11:09:58",
+    "level": "debug",
+    "msg": "442486688 frozen.cpp:271 handleCommand|[frozen] -> FW: pid[heatsink] 10.062500 -0.603750 -0.006250 -0.597500 0.000",
+    "seq": 1612621
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 12:42:09",
+    "level": "debug",
+    "msg": "448017724 sensor_timing.cpp:99 updateRefMarker|[sensor] drift 4ms",
+    "seq": 1631387
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:00:00",
+    "level": "debug",
+    "msg": "449088284 frozen.cpp:271 handleCommand|[frozen] -> FW: command set_side left enabled (2160)",
+    "seq": 1635002
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:00:16",
+    "level": "debug",
+    "msg": "449104586 frozen.cpp:271 handleCommand|[frozen] -> FW: [pump-left] slow=>6.500000",
+    "seq": 1635071
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:13:31",
+    "level": "info",
+    "msg": "449899567 CloudTracing.cpp:26 vtraceln|[cloud] [Upload] File to upload -> 00130BA9.RAW",
+    "seq": 1637783
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:45:25",
+    "level": "info",
+    "msg": "451813912 raw_logger.h:228 startNewLogFile|[logger] writing to 001916D0.RAW",
+    "seq": 1644249
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:50:11",
+    "level": "debug",
+    "msg": "452099664 AsioTcpClient.h:119 read|[asiotcp] read ec: 125 (Operation aborted.)",
+    "seq": 1645221
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:50:27",
+    "level": "debug",
+    "msg": "452115784 Sensor.cpp:139 update|[sensor] retrying command 0x002f",
+    "seq": 1645269
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:53:31",
+    "level": "debug",
+    "msg": "452299330 Sensor.cpp:546 handleCommand|[sensor] -> FW: [ambient] crc mismatches: 0",
+    "seq": 1645895
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:55:26",
+    "level": "debug",
+    "msg": "452414317 raw_sequencer.h:119 unsafe_save|[seq] save - sequence 00191EC4",
+    "seq": 1646292
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 13:59:20",
+    "level": "debug",
+    "msg": "452648684 frozen.cpp:271 handleCommand|[frozen] -> FW: pump[right] slow @ 5.467288V 0.207480A",
+    "seq": 1647080
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 14:45:04",
+    "level": "debug",
+    "msg": "455392324 frozen.cpp:271 handleCommand|[frozen] -> FW: [pump-right] default=>8.000000",
+    "seq": 1656384
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 14:45:24",
+    "level": "debug",
+    "msg": "455412240 frozen.cpp:271 handleCommand|[frozen] -> FW: pump[left] default @ 8.963509V 0.343770A",
+    "seq": 1656446
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:00:00",
+    "level": "debug",
+    "msg": "456288013 frozen.cpp:271 handleCommand|[frozen] -> FW: command set_side left disabled (2934)",
+    "seq": 1659408
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:00:00",
+    "level": "debug",
+    "msg": "456288151 frozen.cpp:271 handleCommand|[frozen] -> FW: tec[left] locked",
+    "seq": 1659428
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:00:25",
+    "level": "debug",
+    "msg": "456313172 frozen.cpp:271 handleCommand|[frozen] -> FW: pump[left] off @ 0.009708V 0.000197A",
+    "seq": 1659497
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:12:00",
+    "level": "debug",
+    "msg": "457008247 main.cpp:165 sparkAlarmR|[alarm] vib. right: time 1736521920, power 100, pattern rise, dur 179",
+    "seq": 1661839
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:12:00",
+    "level": "debug",
+    "msg": "457008251 Sensor.cpp:546 handleCommand|[sensor] -> FW: alarm[right] start: power 100, pattern 255, dur 179000 ms",
+    "seq": 1661859
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:12:07",
+    "level": "debug",
+    "msg": "457015967 Sensor.cpp:546 handleCommand|[sensor] -> FW: alarm[right] new sequence run. ramp power to 10",
+    "seq": 1661877
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:15:00",
+    "level": "info",
+    "msg": "457188201 Thermostat.cpp:177 setHeatingState|set heat state (R: OFF for 0)",
+    "seq": 1662487
+  },
+  {
+    "type": "log",
+    "ts": "2025-01-10 15:15:25",
+    "level": "debug",
+    "msg": "457213968 frozen.cpp:271 handleCommand|[frozen] -> FW: pump[right] off @ 0.000000V 0.011116A",
+    "seq": 1662545
+  }
+]

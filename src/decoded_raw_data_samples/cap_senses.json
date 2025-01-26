@@ -1,0 +1,17 @@
+{
+  "type": "capSense",
+  "ts": "2025-01-10 11:00:22",
+  "left": {
+    "out": 387,
+    "cen": 381,
+    "in": 505,
+    "status": "good"
+  },
+  "right": {
+    "out": 1076,
+    "cen": 1075,
+    "in": 1074,
+    "status": "good"
+  },
+  "seq": 1610679
+}
