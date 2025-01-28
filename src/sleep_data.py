@@ -11,7 +11,7 @@ class TimePeriod(TypedDict):
     end_time: str
     side: Literal['left', 'right']
 
-Name = Literal['david', 'den', 'tally', 'trinity']
+Name = Literal['alina', 'david', 'den', 'elisa', 'tally', 'trinity']
 ValidationFormat = Literal['apple_watch', 'polar']
 RawFormat = Literal['raw', 'pkl']
 
@@ -25,6 +25,14 @@ class SleepEntry(TypedDict):
 SleepDataType = Dict[Name, SleepEntry]
 
 SLEEP_DATA: SleepDataType = {
+    'alina': {
+        'validation_format': 'apple_watch',
+        'sensor_count': 1,
+        'raw_format': 'pkl',
+        'sleep_periods': [
+            {'start_time': '2025-01-26 00:58:20', 'end_time': '2025-01-26 08:47:18', 'side': 'left'},
+        ]
+    },
     'david': {
         'validation_format': 'apple_watch',
         'sensor_count': 1,
@@ -44,6 +52,9 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-22 06:30:00', 'end_time': '2025-01-22 13:30:00', 'side': 'right'},
             {'start_time': '2025-01-23 06:30:00', 'end_time': '2025-01-23 14:30:00', 'side': 'right'},
             {'start_time': '2025-01-24 07:00:00', 'end_time': '2025-01-24 14:45:00', 'side': 'right'},
+            {'start_time': '2025-01-25 08:00:00', 'end_time': '2025-01-25 14:43:00', 'side': 'right'},
+            {'start_time': '2025-01-26 07:55:00', 'end_time': '2025-01-26 14:43:00', 'side': 'right'},
+            {'start_time': '2025-01-27 06:15:00', 'end_time': '2025-01-27 14:53:00', 'side': 'right'},
         ]
     },
     'den': {
@@ -52,6 +63,14 @@ SLEEP_DATA: SleepDataType = {
         'raw_format': 'pkl',
         'sleep_periods': [
             {'start_time': '2025-01-21 02:47:00', 'end_time': '2025-01-21 09:38:00', 'side': 'right'},
+        ]
+    },
+    'elisa': {
+        'validation_format': 'apple_watch',
+        'raw_format': 'raw',
+        'sensor_count': 2,
+        'sleep_periods': [
+            {'start_time': '2025-01-22 22:30:00', 'end_time': '2025-01-23 06:00:00', 'side': 'left'},
         ]
     },
     'tally': {
@@ -67,6 +86,9 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-22 05:30:00', 'end_time': '2025-01-22 13:50:00', 'side': 'left'},
             {'start_time': '2025-01-23 06:00:00', 'end_time': '2025-01-23 13:45:00', 'side': 'left'},
             {'start_time': '2025-01-24 05:35:00', 'end_time': '2025-01-24 14:00:00', 'side': 'left'},
+            {'start_time': '2025-01-25 07:00:00', 'end_time': '2025-01-25 14:30:00', 'side': 'left'},
+            {'start_time': '2025-01-26 05:00:00', 'end_time': '2025-01-26 15:15:00', 'side': 'left'},
+
         ]
     },
     'trinity': {

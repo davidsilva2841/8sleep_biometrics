@@ -96,7 +96,8 @@ def _update_sleep(file_path, output_path):
         cols = base_df.columns
         new_df = new_df[cols]
 
-    new_df = new_df[new_df['sourceName'].str.contains('Apple Watch', case=False, na=False)]
+    if 'sourceName' in new_df.columns:
+        new_df = new_df[new_df['sourceName'].str.contains('Apple Watch', case=False, na=False)]
     dfs.append(new_df)
 
     combined_df = pd.concat(dfs, ignore_index=True)

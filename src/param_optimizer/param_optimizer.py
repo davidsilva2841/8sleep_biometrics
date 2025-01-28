@@ -52,8 +52,7 @@ with different parameter values:
 - Any exceptions during processing are caught and logged using traceback for debugging.
 
 """
-
-
+import pandas as pd
 import gc
 import hashlib
 import itertools
@@ -61,9 +60,11 @@ import json
 import multiprocessing
 import numpy as np
 import random
-import tools
+import time
 import traceback
 import warnings
+
+import tools
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -72,10 +73,25 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 from analyze import analyze_predictions
 from calculations import estimate_heart_rate_intervals, RunData
 from config import PROJECT_FOLDER_PATH
+from data_manager import DataManager
 from globals import data_managers
 
 
-
+OUTPUT_FOLDER_PATH = f'{PROJECT_FOLDER_PATH}src/param_optimizer/results/'
+rolling_combinations = [
+    {'r_window_avg': 2, 'r_min_periods': 2},
+    {'r_window_avg': 5, 'r_min_periods': 2},
+    {'r_window_avg': 5, 'r_min_periods': 5},
+    {'r_window_avg': 10, 'r_min_periods': 5},
+    {'r_window_avg': 15, 'r_min_periods': 5},
+    {'r_window_avg': 15, 'r_min_periods': 10},
+    {'r_window_avg': 20, 'r_min_periods': 15},
+    {'r_window_avg': 20, 'r_min_periods': 20},
+    {'r_window_avg': 25, 'r_min_periods': 15},
+    {'r_window_avg': 25, 'r_min_periods': 25},
+    {'r_window_avg': 30, 'r_min_periods': 20},
+    {'r_window_avg': 30, 'r_min_periods': 30},
+]
 
 def hash_dict(result):
     # Convert dictionary to a JSON string with sorted keys for consistency
@@ -87,21 +103,39 @@ def hash_dict(result):
 
 
 
+def _attempt_rolling_combo(data: DataManager, run_data: RunData, df_pred: pd.DataFrame, params, combo, side):
+    if df_pred.empty:
+        return
+    df_pred = df_pred.copy()
+
+    df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=combo['r_window_avg'], min_periods=combo['r_min_periods']).mean()
+
+    iter_params = {**params, **combo}
+    analyzed_results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=False)
+    result = {
+        **run_data.chart_info['labels'],
+        **run_data.chart_info['runtime_params'],
+        **analyzed_results['heart_rate']['accuracy'],
+        **iter_params,
+        'side': side,
+    }
+
+    params_hash = hash_dict(iter_params)
+    result['params_hash'] = params_hash
+
+    json_file_name = hash_dict(result)
+    file_path = f'{OUTPUT_FOLDER_PATH}{json_file_name}.json'
+    # print(f'Saving result to json file: {file_path}')
+    tools.write_json_to_file(file_path, result)
+    # print('DONE FOR -----------------------------------------------------------------------------------------------------')
+    # print(json.dumps(result, indent=4))
+    df_pred.drop(df_pred.index, inplace=True)
+    del df_pred
+    gc.collect()
+
+
 def run_prediction(param_groups):
-    rolling_combinations = [
-        {'r_window_avg': 2, 'r_min_periods': 2},
-        {'r_window_avg': 5, 'r_min_periods': 2},
-        {'r_window_avg': 5, 'r_min_periods': 5},
-        {'r_window_avg': 10, 'r_min_periods': 5},
-        {'r_window_avg': 15, 'r_min_periods': 5},
-        {'r_window_avg': 15, 'r_min_periods': 10},
-        {'r_window_avg': 20, 'r_min_periods': 15},
-        {'r_window_avg': 20, 'r_min_periods': 20},
-        {'r_window_avg': 25, 'r_min_periods': 15},
-        {'r_window_avg': 25, 'r_min_periods': 25},
-        {'r_window_avg': 30, 'r_min_periods': 20},
-        {'r_window_avg': 30, 'r_min_periods': 30},
-    ]
+
     for params in param_groups:
         if params['slide_by'] >= params['window']:
             continue
@@ -117,54 +151,64 @@ def run_prediction(param_groups):
                     runtime_params=params,
                     name=data.name,
                     side=period['side'],
+                    sensor_count=data.sensor_count,
                     log=False
                 )
                 estimate_heart_rate_intervals(run_data)
                 gc.collect()
                 for combo in rolling_combinations:
                     try:
-                        if run_data.df_pred.empty:
-                            break
-                        df_pred = run_data.df_pred.copy()
+                        _attempt_rolling_combo(data, run_data, run_data.df_pred, params, combo, 'combined')
+                    except Exception as e:
+                        print(e)
+                        traceback.print_exc()
 
-                        df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=combo['r_window_avg'], min_periods=combo['r_min_periods']).mean()
+                    try:
+                        _attempt_rolling_combo(data, run_data, run_data.df_pred_side_1, params, combo, 'side_1')
+                    except Exception as e:
+                        print(e)
+                        traceback.print_exc()
 
-                        iter_params = {**params, **combo}
-                        analyzed_results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=False)
-                        result = {
-                            **run_data.chart_info['labels'],
-                            **run_data.chart_info['runtime_params'],
-                            **analyzed_results['heart_rate']['accuracy'],
-                            **iter_params,
-                        }
-
-                        params_hash = hash_dict(iter_params)
-                        result['params_hash'] = params_hash
-
-                        json_file_name = hash_dict(result)
-                        file_path = f'{PROJECT_FOLDER_PATH}src/param_optimizer/results/{json_file_name}.json'
-                        print(f'Saving result to json file: {file_path}')
-                        tools.write_json_to_file(file_path, result)
-                        print('DONE FOR -----------------------------------------------------------------------------------------------------')
-                        print(json.dumps(result, indent=4))
-                        df_pred.drop(df_pred.index, inplace=True)
-                        del df_pred
-                        gc.collect()
+                    try:
+                        _attempt_rolling_combo(data, run_data, run_data.df_pred_side_2, params, combo, 'side_2')
                     except Exception as e:
                         print(e)
                         traceback.print_exc()
 
                 del run_data
                 gc.collect()
-        print('-----------------------------------------------------------------------------------------------------')
         gc.collect()
-        print('Finished worker for:')
-        print(json.dumps(params, indent=4))
+        # print(json.dumps(params, indent=4))
+    print('WORKER DONE')
+
+
+def monitor_progress():
+    permutations_per_period = len(rolling_combinations) * len(param_combinations)
+    total_periods = 0
+
+    for d in data_managers:
+        total_periods += len(d.sleep_periods)
+
+    total_expected_files = permutations_per_period * total_periods * 3 # *3 for each side + combined
+
+    bar = tools.progress_bar(total_expected_files)
+
+    last_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH))
+    bar.update(last_file_count)
+    print(f'Expecting {total_expected_files:,} files...')
+    while last_file_count < total_expected_files - 10:
+        new_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH))
+        increment = new_file_count - last_file_count
+        bar.update(increment)
+        last_file_count = new_file_count
+        time.sleep(10)
+
+    print('Wrapping up...')
 
 
 # ---------------------------------------------------------------------------------------------------
 def parallel_predictions(param_combinations):
-    processes = 34
+    processes = 33
 
     random.shuffle(param_combinations)
     param_groups = np.array_split(param_combinations, processes)
@@ -178,16 +222,19 @@ if __name__ == "__main__":
     # MUST MATCH RuntimeParams from src/run_data.py
     param_grid = {
         "slide_by": [1],
-        "window": [6, 10],
-        "hr_std_range": [(1, 15)],
-        "hr_percentile": [(15,80), (20, 75), (25,75)],
-        "signal_percentile": [(0.5, 99.5), (1, 99)],
+        "window": [6, 10, 15],
+        "hr_std_range": [(1, 10), (1, 15), (1, 20), (1,10)],
+        "hr_percentile": [(15, 85), (15,80), (20, 75), (20,80), (25,75)],
+        "signal_percentile": [(0.5, 99.5), (1, 99), (2, 98), (1, 98), (0,99)],
         "moving_avg_size": [120, 130]
     }
 
     # Generate all combinations of parameters with named keys
     # param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
     param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
-
-    param_combinations.reverse()
+    # Start monitoring progress
+    monitor_process = multiprocessing.Process(target=monitor_progress)
+    monitor_process.start()
     r = parallel_predictions(param_combinations)
+    monitor_process.join()
+

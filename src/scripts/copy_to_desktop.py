@@ -9,7 +9,9 @@ from config import PROJECT_FOLDER_PATH
 
 
 PEOPLE = [
+    DataManager('alina', load=False),
     DataManager('david', load=False),
+    DataManager('elisa', load=False),
     DataManager('den', load=False),
     DataManager('tally', load=False),
     DataManager('trinity', load=False),

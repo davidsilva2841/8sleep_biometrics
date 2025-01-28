@@ -68,7 +68,7 @@ class RuntimeParams(TypedDict):
     moving_avg_size: int
     hr_std_range: Tuple[int, int]
     hr_percentile: Tuple[int, int]
-    signal_percentile: Tuple[int, int]
+    signal_percentile: Tuple[float, float]
 
 
 class Accuracy(TypedDict):
@@ -263,7 +263,8 @@ class RunData:
     def start_timer(self):
         """Times runtime duration"""
         self.timer_start = time.time()
-        print("Timer started...")
+        if self.log:
+            print("Timer started...")
 
     def stop_timer(self):
         """Times runtime duration"""
@@ -272,7 +273,8 @@ class RunData:
         self.timer_end = time.time()
         self.elapsed_time = self.timer_end - self.timer_start
         self.chart_info['labels']['elapsed'] = self.elapsed_time
-        print(f"Timer stopped. Elapsed time: {self.elapsed_time:.2f} seconds.")
+        if self.log:
+            print(f"Timer stopped. Elapsed time: {self.elapsed_time:.2f} seconds.")
 
     def combine_results(self):
         self.df_pred = pd.DataFrame(self.combined_measurements)
@@ -280,7 +282,20 @@ class RunData:
             self.df_pred.dropna(subset=['heart_rate'], inplace=True)
             self.df_pred.sort_values(by='start_time', inplace=True)
         else:
-            print(f'EMPTY DATAFRAME {self.name} {self.start_time} -> {self.end_time}')
+            if self.log:
+                print(f'EMPTY DATAFRAME {self.name} {self.start_time} -> {self.end_time}')
+
+        self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
+        if not self.df_pred_side_1.empty:
+            self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
+            self.df_pred_side_1.sort_values(by='start_time', inplace=True)
+
+        self.df_pred_side_2 = pd.DataFrame(self.measurements_side_2)
+        if not self.df_pred_side_2.empty:
+            self.df_pred_side_2.dropna(subset=['heart_rate'], inplace=True)
+            self.df_pred_side_2.sort_values(by='start_time', inplace=True)
+
+
         # self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
         # self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
         # self.df_pred_side_1.sort_values(by='start_time', inplace=True)

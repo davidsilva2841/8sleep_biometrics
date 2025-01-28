@@ -80,12 +80,13 @@ def _get_console_handler():
 def _build_logger(logger):
     logger.date = datetime.strftime(datetime.now(), '%Y-%m-%d')
     logger.start_time = datetime.now().strftime('%Y-%m-%d_%H:%M:%S%f')
-    logger.setLevel(_get_log_level())
+    # logger.setLevel(_get_log_level())
+    logger.setLevel(logging.INFO)
 
-    file_path = _get_file_path(logger.date, logger.start_time)
-    logger.addHandler(_get_file_handler(file_path))
+    # file_path = _get_file_path(logger.date, logger.start_time)
+    # logger.addHandler(_get_file_handler(file_path))
     logger.addHandler(_get_console_handler())
-    logger.debug(f'Log file available @ {file_path}')
+    # logger.debug(f'Log file available @ {file_path}')
     #
     sys.excepthook = _handle_exception
 

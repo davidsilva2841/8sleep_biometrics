@@ -1,9 +1,12 @@
 # Global variables for multiprocessing so each process doesn't have to reload the data
 from data_manager import DataManager
 
-david = DataManager('david', load=True)
-# den = DataManager('den', load=True)
+alina = DataManager('alina', load=True)
+# david = DataManager('david', load=True)
+elisa = DataManager('elisa', load=True)
+den = DataManager('den', load=True)
 tally = DataManager('tally', load=True)
 trinity = DataManager('trinity', load=True)
-#  TODO - FIX DEN VALIDATION DATA
-data_managers = [david, tally, trinity]
+# data_managers = [alina, david, den, elisa, trinity, tally]
+data_managers = [alina, den, elisa, trinity, tally]
+
