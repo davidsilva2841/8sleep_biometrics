@@ -18,14 +18,15 @@ from run_data import RuntimeParams
 
 def main():
     alina = DataManager('alina')
-    elisa = DataManager('elisa', load=True)
+    alina._update_piezo_df()
+    alina.load_new_validation_data()
     elisa.load_new_raw_data()
     den = DataManager('den')
     alina.load_new_raw_data()
     alina.load_new_validation_data()
-    david = DataManager('david', load=False)
-    david.load_new_validation_data()
-    david.load_new_raw_data()
+    tally = DataManager('tally', load=False)
+    tally.load_new_raw_data()
+    david._update_piezo_df()
     david.load_new_validation_data()
     tally = DataManager('tally', load=False)
     tally.load_new_raw_data()
@@ -43,9 +44,16 @@ def main():
     david = DataManager('david', load=True)
     trinity = DataManager('trinity', load=True)
     den.load_new_raw_data()
-    data = elisa
-    period = data.sleep_periods[-1]
     data_managers = [trinity, david]
+
+    elisa = DataManager('elisa', load=True)
+    data = alina
+    period = data.sleep_periods[-1]
+
+    # fft_vals = np.fft.rfft(data.piezo_df.iloc[0]['right1'])
+    # mags = np.abs(fft_vals)
+    # freq_resolution = 500 / 500
+    # freqs = np.fft.rfftfreq(fft_vals, d=1.0 / 500)
     for data in data_managers:
         for period in data.sleep_periods:
             start_time = period['start_time']
@@ -56,8 +64,8 @@ def main():
                 'slide_by': 1,
                 'moving_avg_size': 120,
                 'hr_std_range': (1, 20),
-                'hr_percentile': (25, 80),
-                'signal_percentile': (3, 3),
+                'hr_percentile': (25, 75),
+                'signal_percentile': (1, 99),
             }
             run_data = RunData(
                 data.piezo_df,
@@ -78,8 +86,8 @@ def main():
             df_pred = run_data.df_pred_side_2.copy()
 
             df_pred = clean_df_pred(df_pred)
-            r_window_avg = 20
-            r_min_periods = 15
+            r_window_avg = 30
+            r_min_periods = 30
 
             df_pred['heart_rate'] = df_pred['heart_rate'].rolling(window=r_window_avg, min_periods=r_min_periods).mean()
 

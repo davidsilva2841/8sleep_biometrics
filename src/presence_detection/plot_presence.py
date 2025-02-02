@@ -113,7 +113,7 @@ def plot_occupancy(df: pd.DataFrame, title: str = '', start_time: str = None, en
 
     # Select numeric columns to avoid errors during resampling
     numeric_cols = df.select_dtypes(include=['number']).columns
-    df_resampled = df[numeric_cols].resample('30S').mean()
+    df_resampled = df[numeric_cols].resample('30s').mean()
 
     # Convert occupancy columns to binary presence values
     df_resampled['final_left_present'] = (df_resampled['final_left_occupied'] == 2).astype(int)
@@ -174,24 +174,31 @@ def plot_occupancy(df: pd.DataFrame, title: str = '', start_time: str = None, en
 
 
 def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None, end_time: str = None):
+
+    # Convert index to time-only format for filtering
+    df['time'] = df.index.strftime('%H:%M')
+
     if start_time:
+        df = df[df['time'] >= start_time]
         title_start_time = start_time
     else:
         title_start_time = df.index[0]
 
     if end_time:
+        df = df[df['time'] <= end_time]
         title_end_time = end_time
     else:
         title_end_time = df.index[-1]
-
+    print('-----------------------------------------------------------------------------------------------------')
+    print(df.shape)
     # Filter dataframe based on provided time range
-    if start_time:
-        start_time = pd.to_datetime(start_time)
-        df = df[df.index >= start_time]
-
-    if end_time:
-        end_time = pd.to_datetime(end_time)
-        df = df[df.index <= end_time]
+    # if start_time:
+    #     start_time = pd.to_datetime(start_time)
+    #     df = df[df.index >= start_time]
+    #
+    # if end_time:
+    #     end_time = pd.to_datetime(end_time)
+    #     df = df[df.index <= end_time]
 
     # Drop top and bottom 1% outliers for each column
     df_filtered = df.copy()
@@ -204,7 +211,15 @@ def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None,
         axes = [axes]
 
     for ax, column in zip(axes, columns):
-        ax.plot(df_filtered.index, df_filtered[column], label=column, color='b')
+        if df_filtered[column].apply(lambda x: isinstance(x, np.ndarray) and len(x) == 500).any():
+            # Handle columns with nested arrays of length 500
+            expanded_data = np.vstack(df_filtered[column].values)
+            avg_values = np.mean(expanded_data, axis=1)
+            ax.plot(df_filtered.index, avg_values, label=f'{column} (Avg of 500)', color='g')
+        else:
+            # Handle normal columns
+            ax.plot(df_filtered.index, df_filtered[column], label=column, color='b')
+
         ax.set_ylabel(column)
         ax.legend()
         ax.grid(True, linestyle='--')
@@ -219,6 +234,3 @@ def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None,
     plt.xticks(rotation=45)  # Rotate timestamps for better readability
     plt.tight_layout(rect=[0, 0, 1, 0.97])  # Adjust layout to fit title
     plt.show()
-
-
-

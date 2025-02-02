@@ -34,18 +34,37 @@ cargo run --bin sleep-decoder --release \
 
 """
 
-
+"""
+cargo run --release /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-28 --start-time="2025-01-01 22:00" --end-time="2025-01-02 09:00"
+cargo run --release --bin sleep-decoder /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-27  --csv-output=/Users/ds/main/8sleep_biometrics/tmp/27/27 --hr-window-seconds=10.0 --hr-window-overlap=0.1 --hr-smoothing-window=60 --hr-smoothing-strength=0.25 --hr-outlier-percentile=0.05 --hr-history-window=60 --br-window-seconds=120.0 --br-window-overlap=0.0 --harmonic-penalty-close=0.8 --harmonic-penalty-far=0.5 --harmonic-close-threshold=5.0 --harmonic-far-threshold=10.0
+                  
+cargo run --release --bin sleep-decoder /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-28 --start-time="2025-01-01 22:00" \
+  --csv-output=/Users/ds/main/8sleep_biometrics/tmp/28/ \      
+  --hr-window-seconds=10.0 \                       
+  --hr-window-overlap=0.1 \                        
+  --hr-smoothing-window=60 \                       
+  --hr-smoothing-strength=0.25 \                   
+  --hr-outlier-percentile=0.05 \                   
+  --hr-history-window=60 \                         
+  --br-window-seconds=120.0 \                      
+  --br-window-overlap=0.0 \                        
+  --harmonic-penalty-close=0.8 \                   
+  --harmonic-penalty-far=0.5 \                     
+  --harmonic-close-threshold=5.0 \                 
+  --harmonic-far-threshold=10.0    
+  
+"""
 
 
 def main():
 
-    tally = DataManager('tally')
-    data = tally
+    david = DataManager('david', load=False)
+    data = david
     period = data.sleep_periods[-1]
     start_time = period['start_time']
     end_time = period['end_time']
 
-    file_path = '/Users/ds/main/8sleep_biometrics/predictions/tally/01_21_left_combined_period_0.csv'
+    file_path = '/Users/ds/main/8sleep_biometrics/tmp/27/27_right_combined_period_0.csv'
     df_pred = pd.read_csv(file_path)
 
     df_pred.rename({

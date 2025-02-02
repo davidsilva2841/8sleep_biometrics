@@ -31,6 +31,7 @@ SLEEP_DATA: SleepDataType = {
         'raw_format': 'pkl',
         'sleep_periods': [
             {'start_time': '2025-01-26 00:58:20', 'end_time': '2025-01-26 08:47:18', 'side': 'left'},
+            {'start_time': '2025-01-29 23:16:28', 'end_time': '2025-01-30 06:23:28', 'side': 'left'},
         ]
     },
     'david': {
