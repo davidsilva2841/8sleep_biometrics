@@ -1,27 +1,22 @@
-# python3 analyze_sleep.py --side=right --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:00:00"
-# python3 analyze_sleep.py --side=left --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:30:00"
-# python3 analyze_sleep.py --side=left --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"
-# python3 analyze_sleep.py --side=right --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"
+# python3 calibrate_sensor_thresholds.py --side=left --start_time="2025-02-02 20:00:00" --end_time="2025-02-02 21:14:00"
 import sys
 sys.path.append('/home/dac/python_packages/')
-import json
 import gc
 import os
 import argparse
 import traceback
-import numpy as np
 
 sys.path.append(os.getcwd())
 from load_raw_file import load_raw_files
-from piezo_data import load_piezo_df, detect_presence_piezo
+from piezo_data import *
 from cap_data import *
-from sleep_detector import *
+from sleep_detector import build_sleep_record
 from resource_usage import *
 from logger import get_logger
 from utils import *
-from db import *
 
 logger = get_logger()
+
 
 
 def main():
@@ -65,11 +60,11 @@ def main():
     duration = args.end_time - args.start_time
     logger.debug(f"Total duration: {duration}")
     try:
-        create_db_and_table()
         data = load_raw_files('/persistent/', args.start_time, args.end_time, args.side)
 
         piezo_df = load_piezo_df(data, args.side)
-        detect_presence_piezo(piezo_df, args.side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=True)
+        detect_presence_piezo(piezo_df, args.side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=False)
+
         cap_df = load_cap_df(data, args.side)
 
         # Cleanup data
@@ -85,15 +80,11 @@ def main():
         del cap_df
         gc.collect()
 
-        cap_baseline = load_baseline(args.side)
-        detect_presence_cap(merged_df, cap_baseline, args.side, occupancy_threshold=5, rolling_seconds=60, threshold_percent=0.75)
+        # Create baseline
+        baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, args.side, threshold_range=10_000, empty_minutes=10)
+        cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, args.side, min_std=5)
+        save_baseline(args.side, cap_baseline)
 
-        merged_df[f'final_{args.side}_occupied'] = merged_df[f'piezo_{args.side}1_presence'] + merged_df[f'cap_{args.side}_occupied']
-        sleep_records = build_sleep_records(merged_df, args.side, max_gap_in_minutes=15)
-        insert_sleep_records(sleep_records)
-        print(json.dumps(sleep_records, default=custom_serializer, indent=4))
-
-        print(merged_df.head())
         logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
         logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
 
@@ -102,22 +93,19 @@ def main():
         del merged_df
         gc.collect()
     except Exception as e:
+        gc.collect()
         logger.error(e)
         traceback.print_exc()
 
 
 
 if __name__ == "__main__":
-    if get_free_memory_mb() < 500:
-        error = MemoryError('Available memory is too little, exiting...')
-        logger.error(error)
-        raise error
-    # logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-    # logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
+    logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
+    logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
 
     main()
-    # logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-    # logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
+    logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
+    logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
 
 
 

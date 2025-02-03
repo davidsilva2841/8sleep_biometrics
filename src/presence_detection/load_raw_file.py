@@ -17,10 +17,10 @@ from logger import get_logger
 logger = get_logger()
 
 
-def get_current_files():
+def get_current_files(folder_path: str):
     return [
         str(f.resolve())
-        for f in Path('/persistent/').glob('*.RAW')
+        for f in Path(folder_path).glob('*.RAW')
         if f.is_file() and f.name != 'SEQNO.RAW'
     ]
 
@@ -80,7 +80,6 @@ def _decode_cbor_file(file_path: str, data: dict, start_time, end_time, side: Si
                 decoded_data = cbor2.loads(row['data'])
                 if not decoded_data['type'] in ['piezo-dual', 'capSense']:
                     continue
-
                 _delete_other_side(decoded_data, side)
                 if not checked_timespan:
                     timestamp_start = datetime.fromtimestamp(
@@ -127,17 +126,17 @@ def _rename_keys(data: dict):
 
 
 
-def load_raw_data(start_time: str, end_time: str, side: Side):
+def load_raw_files(folder_path: str, start_time: datetime, end_time: datetime, side: Side):
+    logger.debug(f'Loading RAW files from {folder_path}')
     data = {
         'piezo-dual': [],
         'capSense': [],
     }
-    file_paths = get_current_files()
+    file_paths = get_current_files(folder_path)
+
     if len(file_paths) == 0:
         logger.error('No file paths detected!')
-
-    if len(file_paths) < 20:
-        logger.error('Not enough RAW files present!')
+        raise FileNotFoundError(f'No files found for: {folder_path}')
 
     for file_path in file_paths:
         if os.path.isfile(file_path):

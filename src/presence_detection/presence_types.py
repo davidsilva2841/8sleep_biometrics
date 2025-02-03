@@ -1,5 +1,6 @@
 import numpy as np
-from typing import TypedDict, Union, Literal, List
+from typing import TypedDict, Literal, List, Tuple
+from datetime import datetime
 
 Side = Literal['left', 'right']
 
@@ -51,4 +52,13 @@ class Data(TypedDict):
     cap_senses: List[CapSenseData]
     piezo_dual: List[PiezoDualData]
 
+
+class SleepRecord(TypedDict):
+    side: str
+    entered_bed_at: datetime
+    left_bed_at: datetime
+    sleep_period_seconds: int
+    times_exited_bed: int
+    present_intervals: List[Tuple[datetime, datetime]]
+    not_present_intervals: List[Tuple[datetime, datetime]]
 

@@ -1,5 +1,7 @@
+import platform
 import traceback
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import sys
 from datetime import datetime
 import os
@@ -27,13 +29,13 @@ def _get_logger_instance():
 
 
 def _handle_exception(exc_type, exc_value, exc_traceback):
-    log = _get_logger_instance()
+    logger = _get_logger_instance()
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    log.error(f"\nUncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
-    print(exc_traceback)
-    traceback.print_exc()
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    traceback.print_exception(exc_type, exc_value, exc_traceback)
+
 
 
 
@@ -49,20 +51,42 @@ class FixedWidthFormatter(logging.Formatter):
         # Fixed-width formatting for LEVEL (8 chars) and FILE:LINE (30 chars)
         level = f"{record.levelname:<8}"                      # Left-align to 8 chars
         file_info = f"{record.filename}:{record.lineno}"     # e.g., script.py:45
-        file_info_padded = f"{file_info:<30}"                # Left-align to 30 chars
+        file_info_padded = f"{file_info:<40}"                # Left-align to 40 chars
+
+        # Add Process ID (PID), fixed-width of 6 characters
+        pid = f"{record.process:<6}"                         # Left-align to 6 chars
 
         # Combine formatted parts
-        formatted_message = f"{timestamp} | {level} | {file_info_padded} | {record.getMessage()}"
+        formatted_message = f"{timestamp} | PID: {pid} | {level} | {file_info_padded} | {record.getMessage()}"
         return formatted_message
+
+
+FORMATTER = FixedWidthFormatter()
+
+def _get_file_handler():
+    if platform.system().lower() == 'linux':
+        folder_path = '/persistent/free-sleep-data/logs/'
+    else:
+        folder_path = './logs/'
+
+    if not os.path.isdir(folder_path):
+        os.makedirs(folder_path)
+
+    handler = TimedRotatingFileHandler(
+        filename=f"{folder_path}/presence_detection.log",    # Log file path
+        when="midnight",            # Rotate at midnight
+        interval=1,                 # Rotate every day
+        backupCount=2               # Keep 7 days of logs
+    )
+    handler.setFormatter(FORMATTER)
+    return handler
 
 
 def _get_console_handler():
     handler = logging.StreamHandler()
     handler.setLevel(_get_log_level())
-
     # Use the custom FixedWidthFormatter
-    formatter = FixedWidthFormatter()
-    handler.setFormatter(formatter)
+    handler.setFormatter(FORMATTER)
     return handler
 
 
@@ -71,6 +95,7 @@ def _build_logger(logger):
     logger.start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     logger.setLevel(logging.DEBUG)
     logger.addHandler(_get_console_handler())
+    logger.addHandler(_get_file_handler())
     sys.excepthook = _handle_exception
 
 

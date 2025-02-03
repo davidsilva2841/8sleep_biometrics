@@ -9,7 +9,7 @@ import math
 from toolkit import tools
 from data_manager import DataManager
 from plot_presence import plot_cap_presence, plot_df_column, plot_occupancy
-from src.load_raw import load_raw_data
+from src.load_raw import load_raw_files
 from data_types import Data
 
 
@@ -414,7 +414,7 @@ def _build_sleep_analysis(merged_df: pd.DataFrame, max_gap_in_minutes: int = 15)
 
 
 folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-20'
-data = load_raw_data(folder_path=folder_path)
+data = load_raw_files(folder_path=folder_path)
 
 piezo_df = _load_piezo_df(data)
 _detect_presence_piezo(piezo_df, clean=False, rolling_seconds=60, threshold_percent=0.75)

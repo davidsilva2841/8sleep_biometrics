@@ -2,31 +2,62 @@ import os
 import json
 import math
 import pandas as pd
+from datetime import datetime, timedelta
 
 from presence_types import *
 from logger import get_logger
 
 logger = get_logger()
-CAP_BASE_LINE_FILE_PATH = './cap_baseline.json'
+
+LEFT_CAP_BASE_LINE_FILE_PATH = './left_cap_baseline.json'
+RIGHT_CAP_BASELINE_FILE_PATH = './right_cap_baseline.json'
 
 
-def _create_cap_baseline_from_cap_df(merged_df: pd.DataFrame, side: Side, min_std: int = 5) -> CapBaseline:
-    print(f'Creating baseline for capacitance sensors...')
-    baseline_stats = {}
+
+
+
+
+def create_cap_baseline_from_cap_df(merged_df: pd.DataFrame, start_time: datetime, end_time: datetime, side: Side, min_std: int = 5) -> CapBaseline:
+    logger.debug(f'Creating baseline for capacitance sensors...')
+    filtered_df = merged_df[start_time:end_time]
+    cap_baseline = {}
     for sensor in [f'{side}_out', f'{side}_cen', f'{side}_in']:
-        baseline_stats[sensor] = {
-            "mean": merged_df[sensor].mean(),
-            "std": max(merged_df[sensor].std(), min_std)
+        cap_baseline[sensor] = {
+            "mean": filtered_df[sensor].mean(),
+            "std": max(filtered_df[sensor].std(), min_std)
         }
 
-    print(json.dumps(baseline_stats, indent=4))
-    return baseline_stats
+    logger.debug(f'baseline_stats: \n{json.dumps(cap_baseline, indent=4)}')
+    return cap_baseline
 
 
-def load_baseline():
-    if os.path.isfile(CAP_BASE_LINE_FILE_PATH):
-        with open(CAP_BASE_LINE_FILE_PATH, 'r') as baseline:
-            return json.load(baseline)
+def save_baseline(side: Side, cap_baseline: dict):
+    logger.debug(f'Saving {side} cap_baseline...')
+    if side == 'right':
+        file_path = RIGHT_CAP_BASELINE_FILE_PATH
+    else:
+        file_path = LEFT_CAP_BASE_LINE_FILE_PATH
+
+    with open(file_path, "w") as json_file:
+        json.dump(cap_baseline, json_file, indent=4)
+        json_file.close()
+
+
+def load_baseline(side: Side):
+    if side == 'right':
+        file_path = RIGHT_CAP_BASELINE_FILE_PATH
+    else:
+        file_path = LEFT_CAP_BASE_LINE_FILE_PATH
+
+    if os.path.isfile(file_path):
+        with open(file_path, 'r') as json_file:
+            baseline = json.load(json_file)
+            json_file.close()
+            return baseline
+    else:
+        raise FileNotFoundError(f'''Capacitance thresholds must be calibrated prior to running
+Run `python3 analyze_sleep.py --side=right --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"`
+''')
 
 
 def load_cap_df(data: Data, side: Side) -> pd.DataFrame:

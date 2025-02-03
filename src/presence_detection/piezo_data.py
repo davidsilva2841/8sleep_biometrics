@@ -1,9 +1,7 @@
 import gc
 import math
-import json
 import sys
 import os
-import numpy as np
 import pandas as pd
 
 sys.path.append(os.getcwd())
@@ -11,8 +9,6 @@ from presence_types import *
 from logger import get_logger
 
 logger = get_logger()
-
-
 
 
 def _calculate_avg(arr: np.ndarray):
@@ -96,36 +92,42 @@ def detect_presence_piezo(df: pd.DataFrame, side: Side, rolling_seconds=180, thr
 
 
 
-def identify_baseline_period(merged_df: pd.DataFrame, threshold_range: int = 10_000, empty_minutes: int = 10):
+def identify_baseline_period(merged_df: pd.DataFrame, side: str, threshold_range: int = 10_000, empty_minutes: int = 10):
     logger.debug('Finding baseline period...')
-    range_columns = ['left1_range', 'right1_range']
-    stability_columns = ['left_out', 'left_cen', 'left_in', 'right_out', 'right_cen', 'right_in']
+    merged_df = merged_df.sort_index()  # Ensure the index is sorted
 
-    # Convert index to datetime (if not already)
-    merged_df = merged_df.sort_index()
+    range_column = f'{side.lower()}1_range'
+    stability_columns = [f'{side.lower()}_out', f'{side.lower()}_cen', f'{side.lower()}_in']
 
     # Iterate over time chunks (efficient early exit)
     window_size = pd.Timedelta(f'{empty_minutes}min')
 
     for start_time in merged_df.index:
         end_time = start_time + window_size
-        window_df = merged_df.loc[start_time:end_time]
+
+        # Ensure non-overlapping window
+        window_df = merged_df.loc[(merged_df.index >= start_time) & (merged_df.index < end_time)]
 
         if len(window_df) == 0:
             continue  # Skip if no data
 
         # Condition 1: Max range values must be < threshold_range
-        if window_df[range_columns].max().max() >= threshold_range:
+        if window_df[range_column].max() >= threshold_range:
             continue
 
         # Condition 2: Std must be ≤ 5% of mean for stability columns
         rolling_std = window_df[stability_columns].std()
         rolling_mean = window_df[stability_columns].mean()
 
-        if ((rolling_std / rolling_mean) > 0.05).any():
+        # Handle division by zero
+        ratio = np.where(rolling_mean != 0, rolling_std / rolling_mean, 0)
+
+        if (ratio > 0.05).any():
             continue  # If any column exceeds the threshold, skip
 
         # If both conditions are met, return the first valid interval
-        print(f"First valid interval: {start_time} to {end_time}")
+        logger.debug(f"First valid interval: {start_time} to {end_time}")
         return start_time, end_time
 
+    logger.debug("No valid baseline period found.")
+    return None, None

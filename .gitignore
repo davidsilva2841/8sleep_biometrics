@@ -19,3 +19,4 @@ __pycache__
 /src/param_optimizer/**/*.json
 
 
+logs/

@@ -1,0 +1,82 @@
+# python3 analyze_sleep.py --side=right --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:00:00"
+# python3 analyze_sleep.py --side=left --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:30:00"
+# python3 analyze_sleep.py --side=left --start_time="2025-02-01 14:00:00" --end_time="2025-02-01 14:01:00"
+import json
+import gc
+import pandas as pd
+import os
+import sys
+import argparse
+import traceback
+from datetime import datetime, timezone, timedelta
+from db import *
+from presence_detection.cap_data import save_baseline
+
+sys.path.append(os.getcwd())
+from load_raw_file import load_raw_files
+from piezo_data import load_piezo_df, detect_presence_piezo, identify_baseline_period
+from cap_data import *
+from sleep_detector import *
+from logger import get_logger
+from presence_types import *
+from plot_presence import *
+
+logger = get_logger()
+
+#
+# def main(folder_path: str, start_time: datetime, end_time: datetime, side: Side, clean: bool=True):
+def main():
+    folder_path = '/Users//ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-29/'
+    # folder_path = '/Users/ds/main/8sleep_biometrics/data/test/empty/'
+    # folder_path = '/Users/ds/main/8sleep_biometrics/data/test/present/'
+    start_time = datetime.strptime('2025-01-01 06:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    end_time =   datetime.strptime('2025-01-31 14:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    side: Side = 'right'
+    clean = False
+    create_db_and_table()
+    data = load_raw_files(folder_path, start_time, end_time, side)
+    piezo_df = load_piezo_df(data, side)
+    detect_presence_piezo(piezo_df, side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=clean)
+    cap_df = load_cap_df(data, side)
+
+    # Cleanup data
+    del data
+    gc.collect()
+
+    merged_df = piezo_df.merge(cap_df, on='ts', how='inner')
+    # Free up memory from old dfs
+    piezo_df.drop(piezo_df.index, inplace=True)
+    cap_df.drop(cap_df.index, inplace=True)
+    del piezo_df
+    del cap_df
+    gc.collect()
+
+    # cap_baseline = load_baseline()
+    baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, side, threshold_range=10_000, empty_minutes=10)
+    cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, side, min_std=5)
+    save_baseline(side, cap_baseline)
+    detect_presence_cap(
+        merged_df,
+        cap_baseline,
+        side,
+        occupancy_threshold=5,
+        rolling_seconds=60,
+        threshold_percent=0.75,
+        clean=clean
+    )
+
+    merged_df[f'final_{side}_occupied'] = merged_df[f'piezo_{side}1_presence'] + merged_df[f'cap_{side}_occupied']
+    sleep_records = build_sleep_records(merged_df, side, max_gap_in_minutes=15)
+    print(json.dumps(sleep_records, default=custom_serializer, indent=4))
+
+    insert_sleep_records(sleep_records)
+    plot_df_column(merged_df, ['final_left_occupied', 'cap_left_occupied', 'piezo_left1_presence', 'left1_avg', 'left1_range', 'left_out', 'left_cen',
+                               'left_in'], start_time='11:10', end_time='11:25')
+    plot_df_column(merged_df,['final_right_occupied', 'cap_right_occupied', 'piezo_right1_presence', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='00:00', end_time='23:59')
+    plot_df_column(merged_df,['piezo_right1_presence', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='00:00', end_time='23:59')
+
+    return merged_df, sleep_records
+
+
+
+
