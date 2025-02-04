@@ -1,7 +1,4 @@
-# python3 analyze_sleep.py --side=right --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:00:00"
-# python3 analyze_sleep.py --side=left --start_time="2025-01-31 23:00:00" --end_time="2025-02-01 15:30:00"
-# python3 analyze_sleep.py --side=left --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"
-# python3 analyze_sleep.py --side=right --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"
+# python3 analyze_sleep.py --side=right --start_time="2025-02-03 05:00:00" --end_time="2025-02-03 15:00:00"
 import sys
 sys.path.append('/home/dac/python_packages/')
 import json
@@ -69,7 +66,15 @@ def main():
         data = load_raw_files('/persistent/', args.start_time, args.end_time, args.side)
 
         piezo_df = load_piezo_df(data, args.side)
-        detect_presence_piezo(piezo_df, args.side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=True)
+        detect_presence_piezo(
+            piezo_df,
+            args.side,
+            rolling_seconds=10,
+            threshold_percent=0.70,
+            range_threshold=100_000,
+            range_rolling_seconds=10,
+            clean=True
+        )
         cap_df = load_cap_df(data, args.side)
 
         # Cleanup data
@@ -78,6 +83,8 @@ def main():
 
 
         merged_df = piezo_df.merge(cap_df, on='ts', how='inner')
+        merged_df.drop_duplicates(inplace=True)
+
         # Free up memory from old dfs
         piezo_df.drop(piezo_df.index, inplace=True)
         cap_df.drop(cap_df.index, inplace=True)
@@ -86,7 +93,15 @@ def main():
         gc.collect()
 
         cap_baseline = load_baseline(args.side)
-        detect_presence_cap(merged_df, cap_baseline, args.side, occupancy_threshold=5, rolling_seconds=60, threshold_percent=0.75)
+        detect_presence_cap(
+            merged_df,
+            cap_baseline,
+            args.side,
+            occupancy_threshold=5,
+            rolling_seconds=10,
+            threshold_percent=0.90,
+            clean=True
+        )
 
         merged_df[f'final_{args.side}_occupied'] = merged_df[f'piezo_{args.side}1_presence'] + merged_df[f'cap_{args.side}_occupied']
         sleep_records = build_sleep_records(merged_df, args.side, max_gap_in_minutes=15)

@@ -15,7 +15,7 @@ def _calculate_avg(arr: np.ndarray):
     return np.mean(arr)
 
 
-def load_piezo_df(data: Data, side: Side) -> pd.DataFrame:
+def load_piezo_df(data: Data, side: Side, lower_percentile=2, upper_percentile=98) -> pd.DataFrame:
     logger.debug('Loading piezo df...')
     df = pd.DataFrame(data['piezo_dual'])
     df.sort_values(by='ts', inplace=True)
@@ -24,8 +24,8 @@ def load_piezo_df(data: Data, side: Side) -> pd.DataFrame:
 
     df[f'{side}1_avg'] = df[f'{side}1'].apply(_calculate_avg)
 
-    upper_bound = np.percentile(df[f'{side}1_avg'], 98)  # 99th percentile
-    lower_bound = np.percentile(df[f'{side}1_avg'], 2)  # 1st percentile
+    lower_bound = np.percentile(df[f'{side}1_avg'], lower_percentile)
+    upper_bound = np.percentile(df[f'{side}1_avg'], upper_percentile)
     df = df[(df[f'{side}1_avg'] >= lower_bound) & (df[f'{side}1_avg'] <= upper_bound)]
 
     df.drop(columns=[f'{side}1', 'type', 'freq', 'adc', 'gain'], inplace=True)
@@ -33,7 +33,7 @@ def load_piezo_df(data: Data, side: Side) -> pd.DataFrame:
 
 
 
-def detect_presence_piezo(df: pd.DataFrame, side: Side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=True):
+def detect_presence_piezo(df: pd.DataFrame, side: Side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, range_threshold=10_000, clean=True):
     """Detects presence on a bed using piezo sensor data.
 
      The function determines when a person is present based on the sensor's range values.
@@ -65,13 +65,13 @@ def detect_presence_piezo(df: pd.DataFrame, side: Side, rolling_seconds=180, thr
     df[f'{side}1_range'] = df[f'{side}1_max'] - df[f'{side}1_min']
 
     # Apply presence detection
-    df[f'piezo_{side}1_presence'] = (df[f'{side}1_range'] >= 10_000).astype(int)
+    df[f'piezo_{side}1_presence'] = (df[f'{side}1_range'] >= range_threshold).astype(int)
 
     threshold_count = math.ceil(threshold_percent * rolling_seconds)
 
-    df[f'piezo_{side}1_presence'] = (
-            df[f'piezo_{side}1_presence']
-            .rolling(rolling_seconds, min_periods=1)
+    df[f"piezo_{side}1_presence"] = (
+            df[f"piezo_{side}1_presence"]
+            .rolling(window=range_rolling_seconds, min_periods=1)
             .sum()
             >= threshold_count
     ).astype(int)

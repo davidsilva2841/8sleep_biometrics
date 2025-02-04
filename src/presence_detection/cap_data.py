@@ -101,7 +101,7 @@ def detect_presence_cap(
     # Rolling presence detection
     merged_df[f'cap_{side}_occupied'] = (
             merged_df[f'cap_{side}_occupied']
-            .rolling(rolling_seconds, min_periods=1)
+            .rolling(window=rolling_seconds, min_periods=1)
             .sum()
             >= threshold_count
     ).astype(int)

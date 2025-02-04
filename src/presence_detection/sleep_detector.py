@@ -8,22 +8,22 @@ from presence_types import *
 logger = get_logger()
 
 
-def _get_presence_intervals(df, side: Side):
+def _get_presence_intervals(df: pd.DataFrame, side: Side, presence_duration_threshold_seconds=60) -> Tuple[List[Tuple[datetime, datetime]], List[Tuple[datetime, datetime]]]:
     """
-    Get time intervals when someone was present and not present on the bed.
+    Get time intervals when someone was present and not present on the bed,
+    requiring presence intervals to be at least 1 minute long.
 
     Parameters:
         df (pd.DataFrame): The input DataFrame with occupancy data.
         side (str): 'left' or 'right' to check occupancy.
+        presence_duration_threshold_seconds (int): The minimum amount of time presence must be detected in order to add it
 
     Returns:
-        present_intervals (list): List of tuples (start_time, end_time) when occupied.
+        present_intervals (list): List of tuples (start_time, end_time) when occupied (>= 1 min).
         not_present_intervals (list): List of tuples (start_time, end_time) when not occupied.
     """
     # Select the relevant column based on the chosen side
     occupancy_col = f'final_{side}_occupied'
-
-    # Ensure timestamps are sorted
 
     # Initialize tracking variables
     present_intervals = []
@@ -42,9 +42,12 @@ def _get_presence_intervals(df, side: Side):
         # Check for status change
         if status != current_status:
             end_time = timestamp
+            duration = end_time - start_time
 
             if current_status:
-                present_intervals.append((start_time, end_time))
+                # Only add presence intervals >= 1 minute
+                if duration >= timedelta(minutes=1):
+                    present_intervals.append((start_time, end_time))
             else:
                 not_present_intervals.append((start_time, end_time))
 
@@ -54,8 +57,11 @@ def _get_presence_intervals(df, side: Side):
 
     # Capture the last interval
     end_time = df.index[-1]
+    duration = end_time - start_time
+
     if current_status:
-        present_intervals.append((start_time, end_time))
+        if duration >= timedelta(seconds=presence_duration_threshold_seconds):
+            present_intervals.append((start_time, end_time))
     else:
         not_present_intervals.append((start_time, end_time))
 
@@ -73,7 +79,7 @@ def _total_duration_seconds(intervals) -> int:
     return int(total_time.total_seconds())
 
 
-def _identify_sleep_intervals(present_intervals, max_gap_in_minutes: int = 15):
+def _identify_sleep_intervals(present_intervals: List[Tuple[datetime, datetime]], max_gap_in_minutes: int = 15):
     """
     Identifies sleep periods by merging intervals with small gaps.
 

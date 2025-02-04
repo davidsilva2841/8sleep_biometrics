@@ -26,54 +26,87 @@ logger = get_logger()
 #
 # def main(folder_path: str, start_time: datetime, end_time: datetime, side: Side, clean: bool=True):
 def main():
-    folder_path = '/Users//ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-29/'
+    # folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-29/'
+    folder_path = '/Users/ds/main/8sleep_biometrics/data/recent/'
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/test/empty/'
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/test/present/'
-    start_time = datetime.strptime('2025-01-01 06:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-    end_time =   datetime.strptime('2025-01-31 14:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    start_time = datetime.strptime('2025-02-03 04:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    end_time =   datetime.strptime('2025-02-03 15:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     side: Side = 'right'
     clean = False
     create_db_and_table()
     data = load_raw_files(folder_path, start_time, end_time, side)
-    piezo_df = load_piezo_df(data, side)
-    detect_presence_piezo(piezo_df, side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=clean)
+
+
+    piezo_df = load_piezo_df(data, side, lower_percentile=2, upper_percentile=98)
+    detect_presence_piezo(
+        piezo_df,
+        side,
+        rolling_seconds=10,
+        threshold_percent=0.70,
+        range_threshold=100_000,
+        range_rolling_seconds=10,
+        clean=clean
+    )
     cap_df = load_cap_df(data, side)
 
     # Cleanup data
-    del data
-    gc.collect()
+    # del data
+    # gc.collect()
 
-    merged_df = piezo_df.merge(cap_df, on='ts', how='inner')
+    merged_df = piezo_df.join(cap_df, how='inner')
+    merged_df.drop_duplicates(inplace=True)
     # Free up memory from old dfs
     piezo_df.drop(piezo_df.index, inplace=True)
     cap_df.drop(cap_df.index, inplace=True)
-    del piezo_df
-    del cap_df
-    gc.collect()
-
+    # del piezo_df
+    # del cap_df
+    # gc.collect()
+    piezo_df.index.is_unique
+    cap_df.index.is_unique
+    merged_df.index.is_unique
     # cap_baseline = load_baseline()
-    baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, side, threshold_range=10_000, empty_minutes=10)
-    cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, side, min_std=5)
-    save_baseline(side, cap_baseline)
+    # baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, side, threshold_range=10_000, empty_minutes=10)
+    # cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, side, min_std=5)
+    # save_baseline(side, cap_baseline)
+    cap_baseline = load_baseline(side)
     detect_presence_cap(
         merged_df,
         cap_baseline,
         side,
         occupancy_threshold=5,
-        rolling_seconds=60,
-        threshold_percent=0.75,
+        rolling_seconds=10,
+        threshold_percent=0.90,
         clean=clean
     )
 
     merged_df[f'final_{side}_occupied'] = merged_df[f'piezo_{side}1_presence'] + merged_df[f'cap_{side}_occupied']
     sleep_records = build_sleep_records(merged_df, side, max_gap_in_minutes=15)
     print(json.dumps(sleep_records, default=custom_serializer, indent=4))
+    plot_occupancy_one_side(merged_df, side)
+
+
+
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='05:00:15', end_time='07:00:45')
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='05:40:15', end_time='05:50:45')
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='13:00:15', end_time='13:50:45')
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='06:00:15', end_time='08:00:45')
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='06:30:15', end_time='06:45:45')
+    piezo_df[pd.to_datetime("2025-02-03 06:30:00"):pd.to_datetime("2025-02-03 06:45:00")].head(50)
+    merged_df[pd.to_datetime("2025-02-03 06:30:00"):pd.to_datetime("2025-02-03 06:45:00")].head(50)
+    piezo_df[pd.to_datetime("2025-02-03 06:30:00"):pd.to_datetime("2025-02-03 06:45:00")][['right1_range', 'piezo_right1_presence']].head(50)
+    merged_df[pd.to_datetime("2025-02-03 06:30:00"):pd.to_datetime("2025-02-03 06:45:00")]['piezo_right1_presence']
+    merged_df[pd.to_datetime("2025-02-03 06:30:00"):pd.to_datetime("2025-02-03 06:45:00")]['right1_range'].min()
+    plot_df_column(merged_df,['piezo_right1_presence', 'cap_right_occupied', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'])
+
+
+
+
 
     insert_sleep_records(sleep_records)
     plot_df_column(merged_df, ['final_left_occupied', 'cap_left_occupied', 'piezo_left1_presence', 'left1_avg', 'left1_range', 'left_out', 'left_cen',
                                'left_in'], start_time='11:10', end_time='11:25')
     plot_df_column(merged_df,['final_right_occupied', 'cap_right_occupied', 'piezo_right1_presence', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='00:00', end_time='23:59')
-    plot_df_column(merged_df,['piezo_right1_presence', 'right1_avg', 'right1_range', 'right_out', 'right_cen', 'right_in'], start_time='00:00', end_time='23:59')
 
     return merged_df, sleep_records
 

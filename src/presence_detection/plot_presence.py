@@ -1,4 +1,5 @@
 # scp -r -P 8822 'pod1:/persistent/*.RAW' /Users/ds/main/8sleep_biometrics/data/no_presence
+# scp -r -P 8822 'pod2:/persistent/*.RAW' /Users/ds/main/8sleep_biometrics/data/recent
 import pandas as pd
 from typing import List
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ import matplotlib.ticker as mticker
 from load_raw_file import load_raw_files
 from data_types import Data
 import matplotlib.ticker as ticker
-
+from presence_types import *
 
 def plot_cap_presence(df: pd.DataFrame, title: str = '', start_time: str = None, end_time: str = None):
     if start_time:
@@ -173,34 +174,92 @@ def plot_occupancy(df: pd.DataFrame, title: str = '', start_time: str = None, en
     plt.show()
 
 
-def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None, end_time: str = None):
+def plot_occupancy_one_side(df: pd.DataFrame, side: Side, title: str = '', start_time: str = None, end_time: str = None):
+    if side not in ['left', 'right']:
+        raise ValueError("Side must be either 'left' or 'right'.")
+
+    # Ensure DataFrame index is datetime
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("DataFrame index must be a DatetimeIndex.")
 
     # Convert index to time-only format for filtering
     df['time'] = df.index.strftime('%H:%M')
+
+    # Filter dataframe based on provided time range (ignoring date)
+    if start_time:
+        df = df[df['time'] >= start_time]
+
+    if end_time:
+        df = df[df['time'] <= end_time]
+
+    # Select numeric columns to avoid errors during resampling
+    numeric_cols = df.select_dtypes(include=['number']).columns
+    df_resampled = df[numeric_cols].resample('30s').mean()
+
+    # Convert occupancy columns to binary presence values
+    if side == 'left':
+        df_resampled['final_present'] = (df_resampled['final_left_occupied'] == 2).astype(int)
+        df_resampled['cap_present'] = (df_resampled['cap_left_occupied'] == 1).astype(int)
+        df_resampled['piezo_present'] = (df_resampled['piezo_left1_presence'] == 1).astype(int)
+    else:
+        df_resampled['final_present'] = (df_resampled['final_right_occupied'] == 2).astype(int)
+        df_resampled['cap_present'] = (df_resampled['cap_right_occupied'] == 1).astype(int)
+        df_resampled['piezo_present'] = (df_resampled['piezo_right1_presence'] == 1).astype(int)
+
+    fig, axs = plt.subplots(2, 1, figsize=(20, 10), sharex=True)
+
+    # 1st chart: final_present
+    axs[0].plot(df_resampled.index, df_resampled['final_present'], label=f'Final {side.capitalize()} Present (2=Present)', color='purple', linewidth=3)
+    axs[0].set_ylabel(f'Final {side.capitalize()} Presence')
+    axs[0].legend(loc='upper left')
+    axs[0].set_yticks([0, 1])
+    axs[0].set_yticklabels(['Not Present', 'Present'])
+    axs[0].grid(True, linestyle='--', linewidth=0.75)
+
+    # 2nd chart: cap_present & piezo_present
+    axs[1].plot(df_resampled.index, df_resampled['cap_present'], label=f'Cap {side.capitalize()} Occupied (1=Present)', color='orange', linewidth=4)
+    axs[1].plot(df_resampled.index, df_resampled['piezo_present'], label=f'Piezo {side.capitalize()} Present (1=Present)', color='brown', linewidth=2)
+    axs[1].set_ylabel(f'{side.capitalize()} Sensors')
+    axs[1].legend(loc='upper left')
+    axs[1].set_yticks([0, 1])
+    axs[1].set_yticklabels(['Not Present', 'Present'])
+    axs[1].grid(True, linestyle='--', linewidth=0.75)
+    axs[1].set_xlabel('Timestamp')
+
+    # Format x-axis timestamps
+    axs[1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+    plt.xticks(rotation=45)
+
+    title_start_time = df.index[0].strftime('%Y-%m-%d %H:%M')
+    title_end_time = df.index[-1].strftime('%Y-%m-%d %H:%M')
+    title = f'{title} {title_start_time} -> {title_end_time}'
+
+    plt.suptitle(title)
+    plt.tight_layout()
+    plt.show()
+
+
+
+def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None, end_time: str = None):
+    # Convert index to time-only format with seconds for filtering
+    df['time'] = df.index.strftime('%H:%M:%S')
 
     if start_time:
         df = df[df['time'] >= start_time]
         title_start_time = start_time
     else:
-        title_start_time = df.index[0]
+        title_start_time = df.index[0].strftime('%H:%M:%S')
 
     if end_time:
         df = df[df['time'] <= end_time]
         title_end_time = end_time
     else:
-        title_end_time = df.index[-1]
+        title_end_time = df.index[-1].strftime('%H:%M:%S')
+
     print('-----------------------------------------------------------------------------------------------------')
     print(df.shape)
-    # Filter dataframe based on provided time range
-    # if start_time:
-    #     start_time = pd.to_datetime(start_time)
-    #     df = df[df.index >= start_time]
-    #
-    # if end_time:
-    #     end_time = pd.to_datetime(end_time)
-    #     df = df[df.index <= end_time]
 
-    # Drop top and bottom 1% outliers for each column
+    # Filtered dataframe
     df_filtered = df.copy()
 
     # Create subplots for each column
@@ -224,8 +283,8 @@ def plot_df_column(df: pd.DataFrame, columns: List[str], start_time: str = None,
         ax.legend()
         ax.grid(True, linestyle='--')
 
-        # Format x-axis to display time as HH:mm
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+        # Format x-axis to display time as HH:mm:ss
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         # Format y-axis to avoid scientific notation
         ax.yaxis.set_major_formatter(mticker.StrMethodFormatter('{x:,.0f}'))
 
