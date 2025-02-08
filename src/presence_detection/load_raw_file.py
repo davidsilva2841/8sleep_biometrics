@@ -127,7 +127,7 @@ def _rename_keys(data: dict):
 
 
 def load_raw_files(folder_path: str, start_time: datetime, end_time: datetime, side: Side):
-    logger.debug(f'Loading RAW files from {folder_path}')
+    logger.debug(f'Loading RAW files from {folder_path} | {start_time.isoformat()} -> {end_time.isoformat()}')
     data = {
         'piezo-dual': [],
         'capSense': [],

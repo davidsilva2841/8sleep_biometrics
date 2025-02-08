@@ -9,8 +9,8 @@ from logger import get_logger
 
 logger = get_logger()
 
-LEFT_CAP_BASE_LINE_FILE_PATH = './left_cap_baseline.json'
-RIGHT_CAP_BASELINE_FILE_PATH = './right_cap_baseline.json'
+LEFT_CAP_BASE_LINE_FILE_PATH = '/home/dac/bio/src/presence_detection/left_cap_baseline.json'
+RIGHT_CAP_BASELINE_FILE_PATH = '/home/dac/bio/src/presence_detection/right_cap_baseline.json'
 
 
 

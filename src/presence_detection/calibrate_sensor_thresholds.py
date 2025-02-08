@@ -1,4 +1,4 @@
-# python3 calibrate_sensor_thresholds.py --side=left --start_time="2025-02-02 20:00:00" --end_time="2025-02-02 21:14:00"
+# python3 calibrate_sensor_thresholds.py --side=left --start_time="2025-02-05 18:00:00" --end_time="2025-02-05 19:14:00"
 import sys
 sys.path.append('/home/dac/python_packages/')
 import gc
@@ -10,7 +10,7 @@ sys.path.append(os.getcwd())
 from load_raw_file import load_raw_files
 from piezo_data import *
 from cap_data import *
-from sleep_detector import build_sleep_record
+# from sleep_detector import *
 from resource_usage import *
 from logger import get_logger
 from utils import *
@@ -66,7 +66,6 @@ def main():
         detect_presence_piezo(piezo_df, args.side, rolling_seconds=180, threshold_percent=0.75, range_rolling_seconds=10, clean=False)
 
         cap_df = load_cap_df(data, args.side)
-
         # Cleanup data
         del data
         gc.collect()

@@ -1,86 +1,107 @@
-import pandas as pd
-from run_data import ChartInfo
+import gc
+import os.path
 
-from src.data_manager import DataManager
+import pandas as pd
+import subprocess
+
+from presence_detection.presence_types import SleepRecord
+from run_data import ChartInfo
+from toolkit import tools
+from src.data_manager import *
 from src.analyze import analyze_predictions
 
-"""
-HR_WINDOW_SECONDS=10
-HR_WINDOW_OVERLAP_PERCENT=0.1
-BR_WINDOW_SECONDS=120
-BR_WINDOW_OVERLAP_PERCENT=0
 
-cargo run --release /Users/ds/main/8sleep_biometrics/data/people/tally/raw/loaded/2025-01-21 \
-  --csv-output=/Users/ds/main/8sleep_biometrics/predictions/tally_01_21/21 \
-  
-            
 
-cargo run --bin sleep-decoder --release \
-/Users/ds/main/8sleep_biometrics/data/people/tally/raw/tally_piezo_df.feather \
---start-time "2025-01-21 05:30" \
---end-time "2025-01-21 14:08" \
---csv-output /Users/ds/main/8sleep_biometrics/predictions/tally/01_21 \
---hr-window-seconds 10.0 \
---hr-window-overlap 0.67 \
---br-window-seconds=120.0 \
---br-window-overlap=0.0 \
---harmonic-penalty-close=0.7 \
---harmonic-penalty-far=0.3 \
---hr-smoothing-window=60 \
---hr-smoothing-strength=0.25 \
---hr-history-window=180 \
---hr-outlier-percentile=0.01 \
---feather-input
 
-"""
+def run_sleep_decoder(sleep_period: TimePeriod, name: str, file_name: str):
 
-"""
-cargo run --release /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-28 --start-time="2025-01-01 22:00" --end-time="2025-01-02 09:00"
-cargo run --release --bin sleep-decoder /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-27  --csv-output=/Users/ds/main/8sleep_biometrics/tmp/27/27 --hr-window-seconds=10.0 --hr-window-overlap=0.1 --hr-smoothing-window=60 --hr-smoothing-strength=0.25 --hr-outlier-percentile=0.05 --hr-history-window=60 --br-window-seconds=120.0 --br-window-overlap=0.0 --harmonic-penalty-close=0.8 --harmonic-penalty-far=0.5 --harmonic-close-threshold=5.0 --harmonic-far-threshold=10.0
-                  
-cargo run --release --bin sleep-decoder /Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-28 --start-time="2025-01-01 22:00" \
-  --csv-output=/Users/ds/main/8sleep_biometrics/tmp/28/ \      
-  --hr-window-seconds=10.0 \                       
-  --hr-window-overlap=0.1 \                        
-  --hr-smoothing-window=60 \                       
-  --hr-smoothing-strength=0.25 \                   
-  --hr-outlier-percentile=0.05 \                   
-  --hr-history-window=60 \                         
-  --br-window-seconds=120.0 \                      
-  --br-window-overlap=0.0 \                        
-  --harmonic-penalty-close=0.8 \                   
-  --harmonic-penalty-far=0.5 \                     
-  --harmonic-close-threshold=5.0 \                 
-  --harmonic-far-threshold=10.0    
-  
-"""
+    command = [
+        "cargo", "run", "--bin", "sleep-decoder", "--release",
+        f"/Users/ds/main/8sleep_biometrics/data/people/{name}/raw/{name}_piezo_df.feather",
+        f"--start-time", sleep_period['start_time'][:-3],
+        f"--end-time", sleep_period['end_time'][:-3],
+        "--csv-output", f"/Users/ds/main/8sleep_biometrics/predictions/{file_name}/",
+        "--hr-window-seconds", "10.0",
+        "--hr-window-overlap", "0.67",
+        "--br-window-seconds=120.0",
+        "--br-window-overlap=0.0",
+        "--harmonic-penalty-close=0.7",
+        "--harmonic-penalty-far=0.3",
+        "--hr-smoothing-window=75",
+        "--hr-smoothing-strength=0.25",
+        "--hr-history-window=180",
+        "--hr-outlier-percentile=0.0075",
+        "--feather-input"
+    ]
+
+    print(' '.join(command))
+    print(*command, sep='\n')
+    print('-----------------------------------------------------------------------------------------------------')
+
+    result = subprocess.run(
+        command,
+        cwd="/Users/ds/main/sleep-decoder/",
+        capture_output=True,
+        text=True
+    )
+
+    print("STDOUT:")
+    print(result.stdout)
+    print("STDERR:")
+    print(result.stderr)
+
+# if __name__ == "__main__":
+#     run_sleep_decoder()
 
 
 def main():
+    for name in ['alina', 'david', 'den', 'elisa', 'tally', 'trinity']:
+        data = DataManager(name, load=True)
+        for period in data.sleep_periods:
+            print('-----------------------------------------------------------------------------------------------------')
 
-    david = DataManager('david', load=False)
-    data = david
-    period = data.sleep_periods[-1]
-    start_time = period['start_time']
-    end_time = period['end_time']
+            print(f'{name} {period}')
+            start_time = period['start_time']
+            end_time = period['end_time']
+            side = period['side']
+            file_name = f'{name}_{period["start_time"][:10]}_'
+            run_sleep_decoder(period, name, file_name)
 
-    file_path = '/Users/ds/main/8sleep_biometrics/tmp/27/27_right_combined_period_0.csv'
-    df_pred = pd.read_csv(file_path)
+            df_pred_file_path = f'/Users/ds/main/8sleep_biometrics/predictions/{file_name}_{side}_combined_period_0.csv'
+            df_pred = pd.read_csv(df_pred_file_path)
 
-    df_pred.rename({
-        'fft_hr_smoothed': 'heart_rate',
-        'timestamp': 'start_time',
-    }, axis=1, inplace=True)
+            df_pred.rename({
+                'fft_hr_smoothed': 'heart_rate',
+                'timestamp': 'start_time',
+            }, axis=1, inplace=True)
+
+            chart_info: ChartInfo = {
+                'labels': {
+                    'name': name,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'label': 'overlord'
+                }
+            }
+            results = analyze_predictions(data, df_pred, start_time, end_time, chart_info, plot=True)
+            tools.write_json_to_file(f'/Users/ds/main/8sleep_biometrics/predictions/results/{file_name}.json', results)
+        del data
+        gc.collect()
 
 
-    chart_info: ChartInfo = {
-        'labels': {
-            'start_time': start_time,
-            'end_time': end_time,
-            'source': 'overlord'
-        }
-    }
 
-    analyze_predictions(data, df_pred, start_time, end_time, chart_info, plot=True)
-
+    files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/predictions/results/', full_path=True)
+    results = [{**tools.read_json_from_file(file)['heart_rate']['accuracy'], 'file': os.path.basename(file)} for file in files]
+    overlord_df = pd.DataFrame(results)
+    overlord_df['corr'] = overlord_df['corr'].str.rstrip('%').astype(float) / 100
+    overlord_df['rmse'].mean()
+    overlord_df['corr'].mean()
+    overlord_df.describe()
+    files = tools.list_dir_files('/Users/ds/main/8sleep_biometrics/predictions/davids/', full_path=True)
+    results = [{**tools.read_json_from_file(file)['heart_rate']['accuracy'], 'file': os.path.basename(file)} for file in files]
+    davids_df = pd.DataFrame(results)
+    davids_df['corr'] = davids_df['corr'].str.rstrip('%').astype(float) / 100
+    davids_df['corr'].mean()
+    davids_df['rmse'].mean()
+    davids_df.describe()
 

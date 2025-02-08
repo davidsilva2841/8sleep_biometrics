@@ -133,9 +133,10 @@ def insert_sleep_records(sleep_records: List[SleepRecord]):
       - present_intervals (list of [start, end] datetime pairs)
       - not_present_intervals (list of [start, end] datetime pairs)
     """
+    logger.debug(f'Inserting sleep records into {DB_FILE_PATH}...')
+
     conn = sqlite3.connect(DB_FILE_PATH)
     cur = conn.cursor()
-
     insert_query = """
     INSERT OR IGNORE INTO sleep_records (
         side,
@@ -160,17 +161,17 @@ def insert_sleep_records(sleep_records: List[SleepRecord]):
 
         # Encode intervals as JSON strings
         present_intervals_str = json.dumps([
-            [start.isoformat(), end.isoformat()] for start, end in sleep_record.get('present_intervals', [])
+            [start.isoformat() + 'Z', end.isoformat() + 'Z'] for start, end in sleep_record.get('present_intervals', [])
         ])
         not_present_intervals_str = json.dumps([
-            [start.isoformat(), end.isoformat()] for start, end in sleep_record.get('not_present_intervals', [])
+            [start.isoformat() + 'Z', end.isoformat() + 'Z'] for start, end in sleep_record.get('not_present_intervals', [])
         ])
 
         # Prepare the data tuple
         row_tuple = (
             side,
-            entered_bed_at,
-            left_bed_at,
+            entered_bed_at + 'Z',
+            left_bed_at + 'Z',
             sleep_period_seconds,
             times_exited_bed,
             present_intervals_str,

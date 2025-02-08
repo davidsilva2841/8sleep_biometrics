@@ -57,7 +57,7 @@ class FixedWidthFormatter(logging.Formatter):
         pid = f"{record.process:<6}"                         # Left-align to 6 chars
 
         # Combine formatted parts
-        formatted_message = f"{timestamp} | PID: {pid} | {level} | {file_info_padded} | {record.getMessage()}"
+        formatted_message = f"{timestamp} UTC | PID: {pid} | {level} | {file_info_padded} | {record.getMessage()}"
         return formatted_message
 
 

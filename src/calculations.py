@@ -20,7 +20,7 @@ from heart.filtering import filter_signal, remove_baseline_wander
 from heart.preprocessing import scale_data
 from heart.heartpy import process
 from cleaning import *
-from calculations_v2 import calculate_hr_like_rust
+# from calculations_v2 import calculate_hr_like_rust
 
 # ---------------------------------------------------------------------------------------------------
 # region CLEAN DF
