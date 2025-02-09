@@ -15,9 +15,6 @@ from analyze import analyze_predictions
 from vitals.calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
 from vitals.run_data import RuntimeParams
 from data_manager import DataManager
-from heartpy.exceptions import BadSignalWarning
-
-
 
 
 def main():
