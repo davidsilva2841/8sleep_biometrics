@@ -1,4 +1,13 @@
 '''
+# Original Author:
+
+- **Paul van Gent**
+- [HeartPy on PyPI](https://pypi.org/project/heartpy/)
+- [GitHub Repository](https://github.com/paulvangentcom/heartrate_analysis_python)
+- [Heart Rate Analysis for Human Factors: Development and Validation of an Open-Source Toolkit for Noisy Naturalistic Heart Rate Data](https://www.researchgate.net/publication/325967542_Heart_Rate_Analysis_for_Human_Factors_Development_and_Validation_of_an_Open_Source_Toolkit_for_Noisy_Naturalistic_Heart_Rate_Data)
+- [Analysing Noisy Driver Physiology in Real-Time Using Off-the-Shelf Sensors: Heart Rate Analysis Software from the Taking the Fast Lane Project](https://www.researchgate.net/publication/328654252_Analysing_Noisy_Driver_Physiology_Real-Time_Using_Off-the-Shelf_Sensors_Heart_Rate_Analysis_Software_from_the_Taking_the_Fast_Lane_Project?channel=doi&linkId=5bdab2c84585150b2b959d13&showFulltext=true)
+
+
 config file for heartpy
 '''
 
@@ -8,9 +17,9 @@ config file for heartpy
 __all__ = ['get_colorpalette_poincare']
 
 def init(): # pragma: no cover
-    global colorblind 
+    global colorblind
     colorblind = False
-    global colorblind_type 
+    global colorblind_type
     colorblind_type = 'deuteranopia'
     global color_style
     color_style = 'default'
@@ -75,7 +84,7 @@ def get_colorpalette_poincare():
                                'zesty': ['#9E3C50', '#CD913C', '#46DBFF']
                                }
                 }
-    
+
     if colorblind:
         return poincare[colorblind_type.lower()][color_style.lower()]
     else:
@@ -84,10 +93,10 @@ def get_colorpalette_poincare():
 
 def get_colorpalette_plotter():
     '''returns color palettes for regular plotting
-    
+
     Function that returns color palettes for regular plotting coloring.
     Takes arguments from config settings globals.
-    
+
     Parameters
     ----------
     None

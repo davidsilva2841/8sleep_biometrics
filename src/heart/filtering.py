@@ -1,9 +1,18 @@
 '''
+# Original Author:
+
+- **Paul van Gent**
+- [HeartPy on PyPI](https://pypi.org/project/heartpy/)
+- [GitHub Repository](https://github.com/paulvangentcom/heartrate_analysis_python)
+- [Heart Rate Analysis for Human Factors: Development and Validation of an Open-Source Toolkit for Noisy Naturalistic Heart Rate Data](https://www.researchgate.net/publication/325967542_Heart_Rate_Analysis_for_Human_Factors_Development_and_Validation_of_an_Open_Source_Toolkit_for_Noisy_Naturalistic_Heart_Rate_Data)
+- [Analysing Noisy Driver Physiology in Real-Time Using Off-the-Shelf Sensors: Heart Rate Analysis Software from the Taking the Fast Lane Project](https://www.researchgate.net/publication/328654252_Analysing_Noisy_Driver_Physiology_Real-Time_Using_Off-the-Shelf_Sensors_Heart_Rate_Analysis_Software_from_the_Taking_the_Fast_Lane_Project?channel=doi&linkId=5bdab2c84585150b2b959d13&showFulltext=true)
+
 Functions for data filtering tasks.
 '''
-
+import traceback
 from scipy.signal import butter, filtfilt, iirnotch, savgol_filter
 import numpy as np
+import traceback
 
 from heart.datautils import MAD
 
@@ -89,41 +98,7 @@ def butter_highpass(cutoff, sample_rate, order=2):
 
 
 def butter_bandpass(lowcut, highcut, sample_rate, order=2):
-    '''standard bandpass filter.
-    Function that defines standard Butterworth bandpass filter.
-    Filters out frequencies outside the frequency range
-    defined by [lowcut, highcut].
 
-    Parameters
-    ----------
-    lowcut : int or float
-        Lower frequency bound of the filter in Hz
-
-    highcut : int or float
-        Upper frequency bound of the filter in Hz
-
-    sample_rate : int or float
-        sample rate of the supplied signal
-
-    order : int
-        filter order, defines the strength of the roll-off
-        around the cutoff frequency. Typically orders above 6
-        are not used frequently.
-        default : 2
-
-    Returns
-    -------
-    out : tuple
-        numerator and denominator (b, a) polynomials
-        of the defined Butterworth IIR filter.
-
-    Examples
-    --------
-    we can specify lowcut, highcut and sample_rate as ints or floats.
-
-    >>> b, a = butter_bandpass(lowcut = 1, highcut = 6, sample_rate = 100, order = 2)
-    >>> b, a = butter_bandpass(lowcut = 0.4, highcut = 3.7, sample_rate = 72.6, order = 2)
-    '''
     nyq = 0.5 * sample_rate
     low = lowcut / nyq
     high = highcut / nyq
@@ -133,27 +108,107 @@ def butter_bandpass(lowcut, highcut, sample_rate, order=2):
 
 def filter_signal(data, cutoff, sample_rate, order=2, filtertype='lowpass',
                   return_top = False):
+    '''Apply the specified filter
 
-#     if filtertype.lower() == 'lowpass':
-#         b, a = butter_lowpass(cutoff, sample_rate, order=order)
-#     elif filtertype.lower() == 'highpass':
-#         b, a = butter_highpass(cutoff, sample_rate, order=order)
-#     elif filtertype.lower() == 'bandpass':
-#         assert type(cutoff) == tuple or list or np.array, 'if bandpass filter is specified, \
-# cutoff needs to be array or tuple specifying lower and upper bound: [lower, upper].'
-#         b, a = butter_bandpass(cutoff[0], cutoff[1], sample_rate, order=order)
-#     elif filtertype.lower() == 'notch':
-    b, a = iirnotch(cutoff, Q = 0.005, fs = sample_rate)
-#     else:
-#         raise ValueError('filtertype: %s is unknown, available are: \
-# lowpass, highpass, bandpass, and notch' %filtertype)
+    Function that applies the specified lowpass, highpass or bandpass filter to
+    the provided dataset.
+
+    Parameters
+    ----------
+    data : 1-dimensional numpy array or list
+        Sequence containing the to be filtered data
+
+    cutoff : int, float or tuple
+        the cutoff frequency of the filter. Expects float for low and high types
+        and for bandpass filter expects list or array of format [lower_bound, higher_bound]
+
+    sample_rate : int or float
+        the sample rate with which the passed data sequence was sampled
+
+    order : int
+        the filter order
+        default : 2
+
+    filtertype : str
+        The type of filter to use. Available:
+        - lowpass : a lowpass butterworth filter
+        - highpass : a highpass butterworth filter
+        - bandpass : a bandpass butterworth filter
+        - notch : a notch filter around specified frequency range
+        both the highpass and notch filter are useful for removing baseline wander. The notch
+        filter is especially useful for removing baseling wander in ECG signals.
+
+
+    Returns
+    -------
+    out : 1d array
+        1d array containing the filtered data
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import heartpy as hp
+
+    Using standard data provided
+
+    >>> data, _ = hp.load_exampledata(0)
+
+    We can filter the signal, for example with a lowpass cutting out all frequencies
+    of 5Hz and greater (with a sloping frequency cutoff)
+
+    >>> filtered = filter_signal(data, cutoff = 5, sample_rate = 100.0, order = 3, filtertype='lowpass')
+    >>> print(np.around(filtered[0:6], 3))
+    [530.175 517.893 505.768 494.002 482.789 472.315]
+
+    Or we can cut out all frequencies below 0.75Hz with a highpass filter:
+
+    >>> filtered = filter_signal(data, cutoff = 0.75, sample_rate = 100.0, order = 3, filtertype='highpass')
+    >>> print(np.around(filtered[0:6], 3))
+    [-17.975 -28.271 -38.609 -48.992 -58.422 -67.902]
+
+    Or specify a range (here: 0.75 - 3.5Hz), outside of which all frequencies
+    are cut out.
+
+    >>> filtered = filter_signal(data, cutoff = [0.75, 3.5], sample_rate = 100.0,
+    ... order = 3, filtertype='bandpass')
+    >>> print(np.around(filtered[0:6], 3))
+    [-12.012 -23.159 -34.261 -45.12  -55.541 -65.336]
+
+    A 'Notch' filtertype is also available (see remove_baseline_wander).
+
+    >>> filtered = filter_signal(data, cutoff = 0.05, sample_rate = 100.0, filtertype='notch')
+
+    Finally we can use the return_top flag to only return the filter response that
+    has amplitute above zero. We're only interested in the peaks, and sometimes
+    this can improve peak prediction:
+
+    >>> filtered = filter_signal(data, cutoff = [0.75, 3.5], sample_rate = 100.0,
+    ... order = 3, filtertype='bandpass', return_top = True)
+    >>> print(np.around(filtered[48:53], 3))
+    [ 0.     0.     0.409 17.088 35.673]
+    '''
+    # print('-----------------------------------------------------------------------------------------------------')
+    # traceback.print_stack()
+    if filtertype.lower() == 'lowpass':
+        b, a = butter_lowpass(cutoff, sample_rate, order=order)
+    elif filtertype.lower() == 'highpass':
+        b, a = butter_highpass(cutoff, sample_rate, order=order)
+    elif filtertype.lower() == 'bandpass':
+        assert type(cutoff) == tuple or list or np.array, 'if bandpass filter is specified, \
+cutoff needs to be array or tuple specifying lower and upper bound: [lower, upper].'
+        b, a = butter_bandpass(cutoff[0], cutoff[1], sample_rate, order=order)
+    elif filtertype.lower() == 'notch':
+        b, a = iirnotch(cutoff, Q = 0.005, fs = sample_rate)
+    else:
+        raise ValueError('filtertype: %s is unknown, available are: \
+lowpass, highpass, bandpass, and notch' %filtertype)
 
     filtered_data = filtfilt(b, a, data)
 
-    # if return_top:
-    #     return np.clip(filtered_data, a_min = 0, a_max = None)
-    # else:
-    return filtered_data
+    if return_top:
+        return np.clip(filtered_data, a_min = 0, a_max = None)
+    else:
+        return filtered_data
 
 
 def remove_baseline_wander(data, sample_rate, cutoff=0.05):

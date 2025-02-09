@@ -32,7 +32,9 @@ from vitals.cleaning import interpolate_outliers_in_wave
 from heart.filtering import filter_signal, remove_baseline_wander
 from heart.preprocessing import  scale_data
 from heart.heartpy import process
+from get_logger import get_logger
 
+logger = get_logger()
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -106,15 +108,15 @@ def _calculate(run_data: RunData, side: str):
     working_data, measurement = process(
         data,
         500,
-        freq_method='fft',
+        # freq_method='fft',
         breathing_method='fft',
         bpmmin=40,
         bpmmax=90,
-        hampel_correct=False,      # KEEP FALSE - Takes too long
+        # hampel_correct=False,      # KEEP FALSE - Takes too long
         reject_segmentwise=False,  # KEEP FALSE - Less accurate
         windowsize=0.50,
-        clipping_scale=False,
-        clean_rr=True,
+        # clipping_scale=False,
+        # clean_rr=True,
         clean_rr_method='quotient-filter',
     )
     if run_data.is_valid(measurement):
@@ -128,7 +130,8 @@ def _calculate(run_data: RunData, side: str):
     return None
 
 
-def estimate_heart_rate_intervals(run_data: RunData):
+# WARNING: ERRORS HERE FAIL SILENTLY - PASS debug=True in order to see errors
+def estimate_heart_rate_intervals(run_data: RunData, debug=False):
     """
     Estimates heart rate intervals using the given RunData object.
 
@@ -146,6 +149,9 @@ def estimate_heart_rate_intervals(run_data: RunData):
     --------
     >>> estimate_heart_rate_intervals(run_data)
     """
+    if not debug:
+        logger.warning('debug=False, errors will fail SILENTLY, pass debug=True in order to see errors')
+
     if run_data.log:
         print('-----------------------------------------------------------------------------------------------------')
         print(f'Estimating heart rate for {run_data.name} {run_data.start_time} -> {run_data.end_time}')
@@ -158,8 +164,8 @@ def estimate_heart_rate_intervals(run_data: RunData):
             measurement_1 = _calculate(run_data, run_data.side_1)
         except Exception as e:
             run_data.sensor_1_error_count += 1
-            # traceback.print_exc()
-            # WARNING: DEBUGGING - ERRORS HERE FAIL SILENTLY FOR SPEED - Uncomment line above for debugging
+            if debug:
+                traceback.print_exc()
 
         if run_data.senor_count == 2:
             try:

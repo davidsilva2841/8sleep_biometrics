@@ -4,7 +4,6 @@ import gc
 import pandas as pd
 import warnings
 
-warnings.simplefilter(action='ignore', category=BadSignalWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -53,7 +52,7 @@ def main():
                 log=True
             )
 
-            estimate_heart_rate_intervals(run_data)
+            estimate_heart_rate_intervals(run_data, debug=False)
 
             df_pred = run_data.df_pred.copy()
 
