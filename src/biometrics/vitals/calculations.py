@@ -12,6 +12,7 @@ Key Functions:
 - `estimate_heart_rate_intervals`: Runs heart rate estimation over intervals and stores results.
 """
 import gc
+import numpy as np
 from vitals.run_data import RunData
 import traceback
 import pandas as pd
@@ -19,16 +20,22 @@ import pandas as pd
 import sys
 import os
 import platform
+import warnings
 
 if platform.system().lower() == 'linux':
     sys.path.append('/home/dac/python_packages/')
-    sys.path.append('/home/dac/free-sleep/python/')
+    sys.path.append('/home/dac/free-sleep/biometrics/')
 
 sys.path.append(os.getcwd())
 from data_types import *
-from cleaning import interpolate_outliers_in_wave
-from heartpy import filter_signal, remove_baseline_wander, scale_data, process
+from vitals.cleaning import interpolate_outliers_in_wave
+from heart.filtering import filter_signal, remove_baseline_wander
+from heart.preprocessing import  scale_data
+from heart.heartpy import process
 
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=RuntimeWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 # ---------------------------------------------------------------------------------------------------
 # region CLEAN DF
 
@@ -161,8 +168,8 @@ def estimate_heart_rate_intervals(run_data: RunData):
                 run_data.sensor_2_error_count += 1
 
         if measurement_1 is not None and measurement_2 is not None:
-            run_data.measurements_side_1.append(measurement_1)
-            run_data.measurements_side_2.append(measurement_2)
+            # run_data.measurements_side_1.append(measurement_1)
+            # run_data.measurements_side_2.append(measurement_2)
 
             m1_heart_rate = measurement_1['heart_rate']
             m2_heart_rate = measurement_2['heart_rate']
@@ -188,7 +195,7 @@ def estimate_heart_rate_intervals(run_data: RunData):
             })
 
         elif measurement_1 is not None:
-            run_data.measurements_side_1.append(measurement_1)
+            # run_data.measurements_side_1.append(measurement_1)
             m1_heart_rate = measurement_1['heart_rate']
 
             # If the HR differs by more than the allowable movement
@@ -222,7 +229,7 @@ def estimate_heart_rate_intervals(run_data: RunData):
 
             measurement_2['heart_rate'] = heart_rate
             run_data.combined_measurements.append(measurement_2)
-            run_data.measurements_side_2.append(measurement_2)
+            # run_data.measurements_side_2.append(measurement_2)
 
 
         run_data.next()

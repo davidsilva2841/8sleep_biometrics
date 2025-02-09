@@ -66,9 +66,6 @@ import warnings
 
 import tools
 
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
-warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 from analyze import analyze_predictions
 from calculations import estimate_heart_rate_intervals, RunData

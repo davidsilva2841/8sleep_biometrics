@@ -3,6 +3,7 @@
 ```
 conda env create -f environment.yml
 conda develop src/
+conda develop src/biometrics/
 conda develop toolkit/
 ```
 

@@ -4,9 +4,10 @@ import gc
 import pandas as pd
 import warnings
 
+warnings.simplefilter(action='ignore', category=BadSignalWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 pd.set_option('display.width', 300)
 
@@ -15,18 +16,17 @@ from analyze import analyze_predictions
 from vitals.calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
 from vitals.run_data import RuntimeParams
 from data_manager import DataManager
+from heartpy.exceptions import BadSignalWarning
 
 
 
 
 def main():
-    data = DataManager('david', load=True)
+    data = DataManager('trinity', load=True)
     period = data.sleep_periods[0]
 
-    david = DataManager('david', load=True)
-    david.piezo_df.head()
 
-    for name in ['tally']:
+    for name in ['alina', 'elisa', 'den']:
         data = DataManager(name, load=True)
 
         for period in data.sleep_periods:
@@ -49,7 +49,7 @@ def main():
                 name=data.name,
                 side=period['side'],
                 sensor_count=data.sensor_count,
-                label='testing',
+                label='COMPARE_NUMPY',
                 log=True
             )
 
@@ -71,7 +71,7 @@ def main():
             #     .agg({'heart_rate': 'mean'})
             #     .reset_index()
             # )
-            file_name = f'{name}_{period["start_time"][:10]}_'
+            file_name = f'{data.name}_{period["start_time"][:10]}_'
 
             results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=True)
             tools.write_json_to_file(f'/Users/ds/main/8sleep_biometrics/predictions/davids/{file_name}.json', results)

@@ -12,16 +12,16 @@ from scipy.interpolate import UnivariateSpline
 from scipy.signal import butter, filtfilt, welch, periodogram, resample_poly, resample
 
 from heart import exceptions
-from heart.datautils import get_data, get_samplerate_mstimer, get_samplerate_datetime,\
-                       rolling_mean, outliers_iqr_method, outliers_modified_z, \
-                       load_exampledata
-from heart.preprocessing import scale_data, scale_sections, interpolate_clipping, \
-                           flip_signal, enhance_peaks, enhance_ecg_peaks
-from heart.filtering import filter_signal, hampel_filter, hampel_correcter, \
-                       remove_baseline_wander, smooth_signal
+# from heart.datautils import get_data, get_samplerate_mstimer, get_samplerate_datetime,load_exampledata
+from heart.datautils import rolling_mean, outliers_iqr_method, outliers_modified_z
+from heart.preprocessing import enhance_peaks
+    # scale_data, scale_sections, interpolate_clipping, \
+    #                        flip_signal, , enhance_ecg_peaks
+from heart.filtering import filter_signal, hampel_filter, hampel_correcter
+                       # remove_baseline_wander, smooth_signal
 from heart.peakdetection import make_windows, append_dict, fit_peaks, check_peaks, \
                            check_binary_quality, interpolate_peaks
-from heart.visualizeutils import plotter, segment_plotter, plot_poincare, plot_breathing
+# from heart.visualizeutils import plotter, segment_plotter, plot_poincare, plot_breathing
 from heart.analysis import calc_rr, calc_rr_segment, clean_rr_intervals, calc_ts_measures, \
                       calc_fd_measures, calc_breathing, calc_poincare
 
@@ -30,11 +30,128 @@ config.init() #initialize global conf vars
 
 
 
-def process(hrdata, sample_rate, windowsize=0.75,
+def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
+            calc_freq=False, freq_method='welch', welch_wsize=240, freq_square=False,
+            interp_clipping=False, clipping_scale=False, interp_threshold=1020,
+            hampel_correct=False, bpmmin=40, bpmmax=180, reject_segmentwise=False,
+            high_precision=False, high_precision_fs=1000.0, breathing_method='welch',
+            clean_rr=False, clean_rr_method='quotient-filter', measures=None, working_data=None):
+    '''processes passed heart rate data.
 
-         bpmmin=40, bpmmax=180, reject_segmentwise=False,
-             breathing_method='welch',
-            clean_rr_method='quotient-filter'):
+    Processes the passed heart rate data. Returns measures{} dict containing results.
+
+    Parameters
+    ----------
+    hrdata : 1d array or list
+        array or list containing heart rate data to be analysed
+
+    sample_rate : int or float
+        the sample rate with which the heart rate data is sampled
+
+    windowsize : int or float
+        the window size in seconds to use in the calculation of the moving average.
+        Calculated as windowsize * sample_rate
+        default : 0.75
+
+    report_time : bool
+        whether to report total processing time of algorithm
+        default : False
+
+    calc_freq : bool
+        whether to compute frequency domain measurements
+        default : False
+
+    freq_method : str
+        method used to extract the frequency spectrum. Available: 'fft' (Fourier Analysis),
+        'periodogram', and 'welch' (Welch's method).
+        default : 'welch'
+
+    welch_wsize : float
+        Size of window (in sec) when welch method used to compute the spectrogram.
+        This choice is based on a trade-off btw temporal res and freq res of the resulting spectrum
+        60 sec may seem reasonable, but this would greatly limit frequency resolution!
+          1/60 s = 0.017 Hz, so you would only have 2 points in the VLF band
+        Therefore, the default is 4 min (9 points in the VLF band)
+        default : 240
+
+    freq_square : bool
+        whether to square the power spectrum returned when computing frequency measures
+        default : False
+
+    interp_clipping : bool
+        whether to detect and interpolate clipping segments of the signal
+        default : False
+
+    clipping_scale : bool
+        whether to scale the data prior to clipping detection. Can correct errors
+        if signal amplitude has been affected after digitization (for example through
+        filtering). Not recommended by default.
+        default : False
+
+    interp_threshold : int or float
+        threshold to use to detect clipping segments. Recommended to be a few
+        datapoints below the sensor or ADC's maximum value (to account for
+        slight data line noise).
+        default : 1020, 4 below max of 1024 for 10-bit ADC
+
+    hampel_correct : bool
+        whether to reduce noisy segments using large median filter. Disabled by
+        default due to computational complexity and (small) distortions induced
+        into output measures. Generally it is not necessary.
+        default : False
+
+    bpmmin : int or float
+        minimum value to see as likely for BPM when fitting peaks
+        default : 40
+
+    bpmmax : int or float
+        maximum value to see as likely for BPM when fitting peaks
+        default : 180
+
+    reject_segmentwise : bool
+        whether to reject segments with more than 30% rejected beats.
+        By default looks at segments of 10 beats at a time.
+        default : False
+
+    high_precision : bool
+        whether to estimate peak positions by upsampling signal to sample rate
+        as specified in high_precision_fs
+        default : False
+
+    high_precision_fs : int or float
+        the sample rate to which to upsample for more accurate peak position estimation
+        default : 1000 Hz
+
+    breathing_method : str
+        method to use for estimating breathing rate, should be 'welch' or 'fft'
+        default : welch
+
+    clean_rr : bool
+        if true, the RR_list is further cleaned with an outlier rejection pass
+        default : False
+
+    clean_rr_method: str
+        how to find and reject outliers. Available methods are ' quotient-filter',
+        'iqr' (interquartile range), and 'z-score'.
+        default : 'quotient-filter'
+
+    measures : dict
+        dictionary object used by heartpy to store computed measures. Will be created
+        if not passed to function.
+
+    working_data : dict
+        dictionary object that contains all heartpy's working data (temp) objects.
+        Will be created if not passed to function.
+
+    Returns
+    -------
+    working_data : dict
+        dictionary object used to store temporary values.
+
+    measures : dict
+        dictionary object used by heartpy to store computed measures.
+
+    '''
 
     #initialize dicts if needed
     measures = {}
@@ -52,9 +169,9 @@ def process(hrdata, sample_rate, windowsize=0.75,
     #         hrdata = scale_data(hrdata)
     #     hrdata = interpolate_clipping(hrdata, sample_rate, threshold=interp_threshold)
 
-    # if hampel_correct: # pragma: no cover
-    #     hrdata = enhance_peaks(hrdata)
-    #     hrdata = hampel_correcter(hrdata, sample_rate)
+    if hampel_correct: # pragma: no cover
+        hrdata = enhance_peaks(hrdata)
+        hrdata = hampel_correcter(hrdata, sample_rate)
 
     # check that the data has positive baseline for the moving average algorithm to work
     bl_val = np.percentile(hrdata, 0.1)

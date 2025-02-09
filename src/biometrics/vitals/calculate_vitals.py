@@ -1,7 +1,13 @@
 # python3 calculate_biometrics.py --side=left --start_time="2025-02-06 03:00:00" --end_time="2025-02-06 15:00:00"
+# python3 calculate_vitals.py --side=right --start_time="2025-02-08 06:25:00" --end_time="2025-02-08 14:16:00"
 # TODO: Support users manually starting/ending sleep time
 
 import sys
+
+FOLDER_PATH = '/persistent/'
+sys.path.append('/home/dac/python_packages/')
+sys.path.append('/home/dac/free-sleep/biometrics/')
+
 import sqlite3
 import json
 import gc
@@ -28,10 +34,6 @@ logger = get_logger()
 
 
 FOLDER_PATH = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-27/'
-if logger.env == 'prod':
-    FOLDER_PATH = '/persistent/'
-    sys.path.append('/home/dac/python_packages/')
-    sys.path.append('/home/dac/free-sleep/python/')
 
 
 def _parse_args() -> Namespace:
@@ -92,12 +94,13 @@ def _load_piezo_df(start_time: datetime, end_time: datetime, side: Side, folder_
 
 def calculate_vitals(start_time: datetime, end_time: datetime, side: Side, folder_path: str):
     # TESTING
-    side = "right"
-    start_time = datetime.strptime("2025-01-27 06:15:00", "%Y-%m-%d %H:%M:%S")
-    end_time = datetime.strptime("2025-01-27 14:53:00", "%Y-%m-%d %H:%M:%S")
-    folder_path = FOLDER_PATH
+    # side = "right"
+    # start_time = datetime.strptime("2025-01-27 06:15:00", "%Y-%m-%d %H:%M:%S")
+    # end_time = datetime.strptime("2025-01-27 14:53:00", "%Y-%m-%d %H:%M:%S")
+    # folder_path = FOLDER_PATH
 
     piezo_df = _load_piezo_df(start_time, end_time, side, folder_path)
+    print(piezo_df.head())
     runtime_params: RuntimeParams = {
         'window': 10,
         'slide_by': 1,
@@ -164,14 +167,14 @@ def calculate_vitals(start_time: datetime, end_time: datetime, side: Side, folde
     run_data.df_pred.to_sql('vitals', conn, if_exists="append", index=False)
 
 
-# if __name__ == "__main__":
-#     if get_free_memory_mb() < 400:
-#         error = MemoryError('Available memory is too little, exiting...')
-#         logger.error(error)
-#         raise error
-#     args = _parse_args()
-#     logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-#     logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
-#
-#     calculate_vitals(args.start_time, args.end_time, args.side, FOLDER_PATH)
+if __name__ == "__main__":
+    if get_free_memory_mb() < 400:
+        error = MemoryError('Available memory is too little, exiting...')
+        logger.error(error)
+        raise error
+    args = _parse_args()
+    logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
+    logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
+
+    calculate_vitals(args.start_time, args.end_time, args.side, '/persistent/')
 

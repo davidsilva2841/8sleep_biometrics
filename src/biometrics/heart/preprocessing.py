@@ -18,6 +18,42 @@ __all__ = ['scale_data',
 
 
 def scale_data(data, lower=0, upper=1024):
+    '''scales passed sequence between thresholds
+
+    Function that scales passed data so that it has specified lower
+    and upper bounds.
+
+    Parameters
+    ----------
+    data : 1-d array or list
+        Sequence to be scaled
+
+    lower : int or float
+        lower threshold for scaling
+        default : 0
+
+    upper : int or float
+        upper threshold for scaling
+        default : 1024
+
+    Returns
+    -------
+    out : 1-d array
+        contains scaled data
+
+    Examples
+    --------
+    When passing data without further arguments to the function means it scales 0-1024
+
+    >>> x = [2, 3, 4, 5]
+    >>> scale_data(x)
+    array([   0.        ,  341.33333333,  682.66666667, 1024.        ])
+
+    Or you can specify a range:
+
+    >>> scale_data(x, lower = 50, upper = 124)
+    array([ 50.        ,  74.66666667,  99.33333333, 124.        ])
+    '''
 
     rng = np.max(data) - np.min(data)
     minimum = np.min(data)

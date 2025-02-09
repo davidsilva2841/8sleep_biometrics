@@ -29,18 +29,17 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from typing import Union, Tuple, TypedDict, List
-import statistics
+from tqdm import tqdm
 
 import platform
 import sys
 
 if platform.system().lower() == 'linux':
     sys.path.append('/home/dac/python_packages/')
-    sys.path.append('/home/dac/free-sleep/python/')
+    sys.path.append('/home/dac/free-sleep/biometrics/')
 
 
-from biometrics.data_types import *
-import tools
+from data_types import *
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -197,7 +196,7 @@ class RunData:
             raise Exception(f'end_time is before start_time: {start_time} -> {end_time}')
         self.total_intervals = math.ceil(total_seconds / self.slide_by)
         self.progress_bar_update_interval = 100
-        self.bar = tools.progress_bar(math.ceil(self.total_intervals / self.progress_bar_update_interval))
+        self.bar = tqdm(total=math.ceil(self.total_intervals / self.progress_bar_update_interval))
         self.timer_start = None
         self.timer_end = None
         self.elapsed_time = None
@@ -206,7 +205,7 @@ class RunData:
 
         if len(self.heart_rates) >= self.moving_avg_size:
             self.last_heart_rates = self.heart_rates[-self.moving_avg_size:]
-            self.hr_moving_avg = statistics.mean(self.last_heart_rates)
+            self.hr_moving_avg = np.mean(self.last_heart_rates)
 
             self.lower_bound = np.percentile(self.last_heart_rates, self.hr_percentile[0])
             self.upper_bound = np.percentile(self.last_heart_rates, self.hr_percentile[1])
@@ -215,7 +214,7 @@ class RunData:
                 self.upper_bound = self.hr_moving_avg + 12.5
                 self.lower_bound = self.hr_moving_avg - 12.5
 
-            self.hr_std_2 = statistics.stdev(self.last_heart_rates) * 2
+            self.hr_std_2 = np.std(self.last_heart_rates) * 2
             if self.hr_std_2 < self.hr_std_range[0]:
                 self.hr_std_2 = self.hr_std_range[0]
             elif self.hr_std_2 > self.hr_std_range[1]:
