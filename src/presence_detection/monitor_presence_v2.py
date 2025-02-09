@@ -10,15 +10,14 @@ import argparse
 import traceback
 from datetime import datetime, timezone, timedelta
 from db import *
-from presence_detection.cap_data import save_baseline
 
 sys.path.append(os.getcwd())
-from load_raw_file import load_raw_files
+from load_raw_files import load_raw_files
 from piezo_data import load_piezo_df, detect_presence_piezo, identify_baseline_period
-from cap_data import *
-from sleep_detector import *
-from logger import get_logger
-from presence_types import *
+from biometrics.sleep_detection.cap_data import *
+from biometrics.sleep_detection.sleep_detector import *
+from get_logger import get_logger
+from data_types import *
 from plot_presence import *
 
 logger = get_logger()
@@ -28,13 +27,12 @@ logger = get_logger()
 def main():
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-29/'
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/recent/'
-    folder_path = '/Users/ds/main/8sleep_biometrics/data/people/trinity/raw/loaded/2025-01-20/'
-    start_time = datetime.strptime('2025-01-20 00:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-    end_time =   datetime.strptime('2025-01-20 07:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-    side: Side = 'left'
+    folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-20/'
+    start_time = datetime.strptime('2025-01-10 06:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    end_time =   datetime.strptime('2025-01-10 15:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    side: Side = 'right'
     clean = False
-    create_db_and_table()
-    data = load_raw_files(folder_path, start_time - timedelta(hours=12), end_time + timedelta(hours=2), side)
+    data = load_raw_files(folder_path, start_time - timedelta(hours=12), end_time + timedelta(hours=2), side, sensor_count=1, raw_data_types=['capSense', 'piezo-dual'])
 
 
     piezo_df = load_piezo_df(data, side, lower_percentile=2, upper_percentile=98)
@@ -58,19 +56,13 @@ def main():
     # Free up memory from old dfs
     piezo_df.drop(piezo_df.index, inplace=True)
     cap_df.drop(cap_df.index, inplace=True)
-    # del piezo_df
-    # del cap_df
-    # gc.collect()
-    piezo_df.index.is_unique
-    cap_df.index.is_unique
-    merged_df.index.is_unique
-    # cap_baseline = load_baseline()
 
-    baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, side, threshold_range=10_000, empty_minutes=10)
-    cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, side, min_std=5)
+
+    # baseline_start_time, baseline_end_time = identify_baseline_period(merged_df, side, threshold_range=10_000, empty_minutes=10)
+    # cap_baseline = create_cap_baseline_from_cap_df(merged_df, baseline_start_time, baseline_end_time, side, min_std=5)
 
     # save_baseline(side, cap_baseline)
-    # cap_baseline = load_baseline(side)
+    cap_baseline = load_baseline(side)
 
     detect_presence_cap(
         merged_df,

@@ -12,29 +12,23 @@ pd.set_option('display.width', 300)
 
 from toolkit import tools
 from analyze import analyze_predictions
-from calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
+from vitals.calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
+from vitals.run_data import RuntimeParams
 from data_manager import DataManager
-from run_data import RuntimeParams
 
 
 
 
 def main():
-    data = DataManager('elisa', load=True)
-    data.piezo_df.head()
+    data = DataManager('david', load=True)
+    period = data.sleep_periods[0]
 
     david = DataManager('david', load=True)
     david.piezo_df.head()
-    # fft_vals = np.fft.rfft(data.piezo_df.iloc[0]['right1'])
-    # mags = np.abs(fft_vals)
-    # freq_resolution = 500 / 500
-    # freqs = np.fft.rfftfreq(fft_vals, d=1.0 / 500)
+
     for name in ['tally']:
         data = DataManager(name, load=True)
-        data.sleep_periods.pop(0)
-        data.sleep_periods.pop(0)
-        data.sleep_periods.pop(0)
-        data.sleep_periods.pop(0)
+
         for period in data.sleep_periods:
             start_time = period['start_time']
             end_time = period['end_time']
@@ -55,7 +49,7 @@ def main():
                 name=data.name,
                 side=period['side'],
                 sensor_count=data.sensor_count,
-                label='COMPARE',
+                label='testing',
                 log=True
             )
 
@@ -84,7 +78,31 @@ def main():
             run_data.print_results()
             del run_data
             gc.collect()
+            # ---------------------------------------------------------------------------------------------------
+
+            df = run_data.df_pred.copy()
+            df['start_time'] = pd.to_datetime(df['start_time'])
+
+            # Floor timestamps to the nearest 5-minute interval
+            df['period_start'] = df['start_time'].dt.floor('5min')
+            df['period_end'] = df['period_start'] + pd.Timedelta(minutes=5)
+
+            # Convert timestamps to Unix epoch (for Prisma)
+            df['period_start'] = df['period_start'].astype('int64') // 10 ** 9
+            df['period_end'] = df['period_end'].astype('int64') // 10 ** 9
+
+            # Group by 5-minute periods and compute averages
+            df_aggregated = df.groupby(['period_start', 'period_end']).agg({
+                'heart_rate': 'mean',
+                'hrv': 'mean',
+                'breathing_rate': 'mean'
+            }).reset_index()
+            df_aggregated['ts_start'] = pd.to_datetime(df_aggregated['period_start'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
+            df_aggregated['ts_end'] = pd.to_datetime(df_aggregated['period_end'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
+
 
         del data
         gc.collect()
+
+
 

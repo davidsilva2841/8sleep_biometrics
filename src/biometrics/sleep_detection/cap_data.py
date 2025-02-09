@@ -1,19 +1,19 @@
 import os
+import gc
 import json
 import math
 import pandas as pd
 from datetime import datetime, timedelta
+import platform
 
-from presence_types import *
-from logger import get_logger
+from data_types import *
+from get_logger import get_logger
 
 logger = get_logger()
 
-LEFT_CAP_BASE_LINE_FILE_PATH = '/home/dac/bio/src/presence_detection/left_cap_baseline.json'
-RIGHT_CAP_BASELINE_FILE_PATH = '/home/dac/bio/src/presence_detection/right_cap_baseline.json'
 
-
-
+LEFT_CAP_BASE_LINE_FILE_PATH = f'{logger.folder_path}left_cap_baseline.json'
+RIGHT_CAP_BASELINE_FILE_PATH = f'{logger.folder_path}right_cap_baseline.json'
 
 
 
@@ -48,7 +48,7 @@ def load_baseline(side: Side):
         file_path = RIGHT_CAP_BASELINE_FILE_PATH
     else:
         file_path = LEFT_CAP_BASE_LINE_FILE_PATH
-
+    logger.debug(f'Loading cap baseline from: {file_path}')
     if os.path.isfile(file_path):
         with open(file_path, 'r') as json_file:
             baseline = json.load(json_file)
@@ -56,7 +56,7 @@ def load_baseline(side: Side):
             return baseline
     else:
         raise FileNotFoundError(f'''Capacitance thresholds must be calibrated prior to running
-Run `python3 analyze_sleep.py --side=right --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"`
+Run `python3 calibrate_sensor_thresholds.py --side=right --start_time="2025-02-02 06:00:00" --end_time="2025-02-02 15:01:00"`
 ''')
 
 
@@ -110,3 +110,7 @@ def detect_presence_cap(
         merged_df.drop(columns=[f'{side}_combined', f'{side}_out', f'{side}_cen', f'{side}_in'], inplace=True)
 
     return merged_df
+
+
+
+

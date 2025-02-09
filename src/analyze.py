@@ -17,7 +17,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from config import PROJECT_FOLDER_PATH
 
 from data_manager import DataManager
-from run_data import ChartInfo
+from biometrics.biometrics.run_data import ChartInfo
 
 # ---------------------------------------------------------------------------------------------------
 # region Types

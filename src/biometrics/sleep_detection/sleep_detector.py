@@ -1,9 +1,15 @@
 import pandas as pd
+import gc
 from typing import List, Tuple
 from datetime import datetime, timedelta
 
-from logger import get_logger
-from presence_types import *
+from data_types import *
+from db import insert_sleep_records
+from sleep_detection.cap_data import load_cap_df, load_baseline, detect_presence_cap
+from get_logger import get_logger
+from load_raw_files import load_raw_files
+from piezo_data import load_piezo_df, detect_presence_piezo
+# from presence_detection.plot_presence import plot_occupancy_one_side
 
 logger = get_logger()
 
@@ -159,6 +165,7 @@ def _filter_intervals(
 
 def build_sleep_records(merged_df: pd.DataFrame, side: Side, max_gap_in_minutes: int = 15) ->List[SleepRecord]:
     logger.debug('Building sleep records...')
+
     present_intervals, not_present_intervals = _get_presence_intervals(merged_df, side)
     sleep_intervals = _identify_sleep_intervals(present_intervals, max_gap_in_minutes=max_gap_in_minutes)
 
@@ -180,3 +187,62 @@ def build_sleep_records(merged_df: pd.DataFrame, side: Side, max_gap_in_minutes:
         })
 
     return sleep_records
+
+
+
+def detect_sleep(side: Side, start_time: datetime, end_time: datetime, folder_path: str) -> List[SleepRecord]:
+    logger.debug(f"Processing side:  {side}")
+    logger.debug(f"Start time (UTC): {start_time.isoformat()}")
+    logger.debug(f"End time (UTC):   {end_time.isoformat()}")
+
+    data = load_raw_files(folder_path, start_time, end_time, side, sensor_count=1, raw_data_types=['capSense', 'piezo-dual'])
+
+    piezo_df = load_piezo_df(data, side)
+    cap_df = load_cap_df(data, side)
+    # Cleanup data
+    del data
+    gc.collect()
+
+    detect_presence_piezo(
+        piezo_df,
+        side,
+        rolling_seconds=10,
+        threshold_percent=0.70,
+        range_threshold=80_000,
+        range_rolling_seconds=10,
+        clean=True
+    )
+
+
+    merged_df = piezo_df.merge(cap_df, on='ts', how='inner')
+    merged_df.drop_duplicates(inplace=True)
+
+    # Free up memory from old dfs
+    piezo_df.drop(piezo_df.index, inplace=True)
+    cap_df.drop(cap_df.index, inplace=True)
+    del piezo_df
+    del cap_df
+    gc.collect()
+
+    cap_baseline = load_baseline(side)
+
+    detect_presence_cap(
+        merged_df,
+        cap_baseline,
+        side,
+        occupancy_threshold=5,
+        rolling_seconds=10,
+        threshold_percent=0.90,
+        clean=True
+    )
+
+    merged_df[f'final_{side}_occupied'] = merged_df[f'piezo_{side}1_presence'] + merged_df[f'cap_{side}_occupied']
+    sleep_records = build_sleep_records(merged_df, side, max_gap_in_minutes=15)
+    insert_sleep_records(sleep_records)
+    # plot_occupancy_one_side(merged_df, side)
+    # Cleanup
+    merged_df.drop(merged_df.index, inplace=True)
+    del merged_df
+    gc.collect()
+    return sleep_records
+

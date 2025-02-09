@@ -1,15 +1,23 @@
-# python3 analyze_sleep.py --side=right --start_time="2025-02-06 04:00:00" --end_time="2025-02-06 15:00:00"
+# python3 analyze_sleep.py --side=right --start_time="2025-02-07 04:00:00" --end_time="2025-02-07 15:00:00"
 # python3 analyze_sleep.py --side=left --start_time="2025-02-06 03:00:00" --end_time="2025-02-06 15:00:00"
 # TODO: Support users manually starting/ending sleep time
 
 import sys
-sys.path.append('/home/dac/python_packages/')
 import json
 import gc
 import os
-import argparse
+
 import traceback
+from argparse import ArgumentParser, Namespace
+
 import numpy as np
+import platform
+
+if platform.system().lower() == 'linux':
+    sys.path.append('/home/dac/python_packages/')
+    sys.path.append('/home/dac/free-sleep/python/')
+else:
+    sys.path.append('/Users/ds/main/8sleep_biometrics/src/pod/')
 
 sys.path.append(os.getcwd())
 from load_raw_file import load_raw_files
@@ -24,7 +32,7 @@ from db import *
 logger = get_logger()
 
 
-def main():
+def _parse_args() -> Namespace:
     # Argument parser setup
     parser = argparse.ArgumentParser(description="Process presence intervals with UTC datetime.")
 
@@ -56,6 +64,11 @@ def main():
         logger.error("Error: --start_time must be earlier than --end_time.")
         sys.exit(1)
 
+    return args
+
+
+def main():
+    args = _parse_args()
     # Display parsed datetime objects
     logger.debug(f"Processing side:  {args.side}")
     logger.debug(f"Start time (UTC): {args.start_time.isoformat()}")
@@ -68,7 +81,7 @@ def main():
         logger.debug(f"START Memory Usage: {get_memory_usage_unix():.2f} MB")
         logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
         # create_db_and_table()
-        data = load_raw_files('/persistent/', args.start_time, args.end_time, args.side)
+        data = load_raw_files('/persistent/', args.start_time, args.end_time, args.side, ['capSense', 'piezo-dual'])
         logger.debug(f"0 Memory Usage: {get_memory_usage_unix():.2f} MB")
         logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
 

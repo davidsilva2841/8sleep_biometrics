@@ -1,54 +1,35 @@
-import sqlite3
+# scp -r -P 8822 'root@192.168.1.50:/persistent/*.RAW' /Users/david/8sleep/raw
+import gc
 
-# Path to the SQLite database file
-db_path = "/persistent/free-sleep-data/free-sleep.db"
+import pandas as pd
+import warnings
 
-def fetch_sleep_records():
-    try:
-        # Connect to the SQLite database
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+from datetime import datetime, timezone, timedelta
+from data_manager import DataManager
 
-# Query to select all rows from the sleep_records table
-cursor.execute("SELECT * FROM sleep_records")
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
-# Fetch all rows
-rows = cursor.fetchall()
+pd.set_option('display.width', 300)
 
-# Get column names for better output formatting
-column_names = [description[0] for description in cursor.description]
+from biometrics.sleep_detection.sleep_detector import detect_sleep
 
-import sqlite3
+data = DataManager('david', load=False)
+period = data.sleep_periods[0]
+for period in data.sleep_periods:
+    start_time = datetime.strptime(period['start_time'], "%Y-%m-%d %H:%M:%S")
+    end_time = datetime.strptime(period['end_time'], "%Y-%m-%d %H:%M:%S") + timedelta(hours=4)
+    folder_name = start_time.strftime('%Y-%m-%d')
+    folder_path = f'/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/{folder_name}/'
+    detect_sleep(
+        'right',
+        start_time - timedelta(hours=5),
+        end_time,
+        folder_path,
+    )
 
-# Path to the SQLite database
-db_path = "/persistent/free-sleep-data/free-sleep.db"
 
-# Connect to the SQLite database
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
 
-# Query to get all table names
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = cursor.fetchall()
 
-if not tables:
-    print("No tables found in the database.")
-    return
-
-# Print schema for each table
-for table_name, in tables:
-    print(f"\n🔍 Schema for table: {table_name}")
-    cursor.execute(f"PRAGMA table_info({table_name});")
-    schema = cursor.fetchall()
-
-    # Display column info
-    if schema:
-        print("------------------------------------------------------")
-        print(f"{'CID':<5} {'Name':<20} {'Type':<10} {'Not Null':<10} {'Default':<15} {'PK':<5}")
-        print("------------------------------------------------------")
-        for col in schema:
-            cid, name, col_type, notnull, dflt_value, pk = col
-            print(f"{cid:<5} {name:<20} {col_type:<10} {notnull:<10} {str(dflt_value):<15} {pk:<5}")
-    else:
-        print("No schema information available.")
 

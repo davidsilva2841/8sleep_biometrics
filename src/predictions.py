@@ -6,7 +6,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
-pd.set_option('display.width', 300)
 
 from analyze import analyze_predictions
 from calculations import clean_df_pred, estimate_heart_rate_intervals, RunData
