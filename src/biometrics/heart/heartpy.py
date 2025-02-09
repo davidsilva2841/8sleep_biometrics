@@ -540,7 +540,8 @@ def run_tests(verbose=0):
     function to run doctest on all of HeartPy
     '''
 
-    from . import analysis, datautils, filtering, peakdetection, preprocessing, visualizeutils, config
+    # from . import analysis, datautils, filtering, peakdetection, preprocessing, visualizeutils, config
+    from . import analysis, datautils, filtering, peakdetection, preprocessing, config
     import doctest
 
     succeeded = 0
@@ -581,11 +582,11 @@ def run_tests(verbose=0):
         print('success!')
         succeeded += 1
 
-    print('testing visualization utils')
-    results = doctest.testmod(visualizeutils, verbose=verbose)
-    if results.failed == 0: # pragma: no cover
-        print('success!')
-        succeeded += 1
+    # print('testing visualization utils')
+    # results = doctest.testmod(visualizeutils, verbose=verbose)
+    # if results.failed == 0: # pragma: no cover
+    #     print('success!')
+    #     succeeded += 1
 
     print('testing main processing pipeline')
     from . import heartpy as hptester

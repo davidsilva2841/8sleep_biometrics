@@ -73,6 +73,7 @@ def main():
             file_name = f'{data.name}_{period["start_time"][:10]}_'
 
             results = analyze_predictions(data, df_pred, run_data.start_time, run_data.end_time, run_data.chart_info, plot=True)
+
             tools.write_json_to_file(f'/Users/ds/main/8sleep_biometrics/predictions/davids/{file_name}.json', results)
             run_data.print_results()
             del run_data
