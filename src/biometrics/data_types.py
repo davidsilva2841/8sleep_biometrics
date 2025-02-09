@@ -172,3 +172,22 @@ class CapBaseline(TypedDict):
     right_in: Baseline
 
 
+
+from typing import TypedDict, Union
+import numpy as np
+
+class Measurement(TypedDict):
+    bpm: Union[np.float64, float]
+    ibi: Union[np.float64, float]
+    sdnn: Union[np.float64, float]
+    sdsd: Union[np.float64, float, str]  # 'masked' is a string
+    rmssd: Union[np.float64, float]
+    pnn20: Union[np.float64, float]
+    pnn50: Union[np.float64, float]
+    hr_mad: Union[np.float64, float]
+    sd1: Union[np.float64, float]
+    sd2: Union[np.float64, float]
+    s: Union[np.float64, float]
+    sd1_sd2: Union[np.float64, float]  # Renamed "sd1/sd2" to a valid key
+    breathingrate: Union[np.float64, float]
+

@@ -5,7 +5,7 @@ pip download --only-binary :all: \
     --implementation cp \
     --abi cp310 \
     -d wheelhouse \
-    cython
+    watchdog
 
 pip download --only-binary :all: \
     --platform manylinux2014_aarch64 \

@@ -119,6 +119,7 @@ def _calculate(run_data: RunData, side: str):
         # clean_rr=True,
         clean_rr_method='quotient-filter',
     )
+    print(measurement)
     if run_data.is_valid(measurement):
         return {
             'start_time': run_data.start_interval.strftime('%Y-%m-%d %H:%M:%S'),

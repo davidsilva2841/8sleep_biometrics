@@ -104,7 +104,7 @@ def _build_logger(logger: BaseLogger):
 
     logger.setLevel(logging.DEBUG)
     logger.addHandler(_get_console_handler())
-    logger.addHandler(_get_file_handler(logger.folder_path))
+    # logger.addHandler(_get_file_handler(logger.folder_path))
     sys.excepthook = _handle_exception
 
 

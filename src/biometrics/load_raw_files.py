@@ -28,17 +28,17 @@ def _decode_piezo_data(raw_bytes: bytes) -> np.ndarray:
     return np.frombuffer(raw_bytes, dtype=np.int32)
 
 
-def _load_piezo_row(data: dict, side: Side):
-    if side == 'left':
-        if 'left1' in data:
-            data['left1'] = _decode_piezo_data(data['left1'])
-        if 'left2' in data:
-            data['left2'] = _decode_piezo_data(data['left2'])
-    else:
-        if 'right1' in data:
-            data['right1'] = _decode_piezo_data(data['right1'])
-        if 'right2' in data:
-            data['right2'] = _decode_piezo_data(data['right2'])
+def load_piezo_row(data: dict, side: Side):
+    # if side == 'left':
+    if 'left1' in data:
+        data['left1'] = _decode_piezo_data(data['left1'])
+    if 'left2' in data:
+        data['left2'] = _decode_piezo_data(data['left2'])
+    # else:
+    if 'right1' in data:
+        data['right1'] = _decode_piezo_data(data['right1'])
+    if 'right2' in data:
+        data['right2'] = _decode_piezo_data(data['right2'])
 
 
 def _delete_other_side(decoded_data: dict, side: Side, sensor_count: int):
@@ -98,7 +98,7 @@ def _decode_cbor_file(file_path: str, data: dict, start_time, end_time, side: Si
                             return
 
                 if decoded_data['type'] == 'piezo-dual':
-                    _load_piezo_row(decoded_data, side)
+                    load_piezo_row(decoded_data, side)
 
                 decoded_data['ts'] = datetime.fromtimestamp(
                     decoded_data['ts'],

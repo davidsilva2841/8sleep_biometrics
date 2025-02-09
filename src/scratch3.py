@@ -43,7 +43,7 @@ if __name__ == "__main__":
         log=True
     )
 
-    estimate_heart_rate_intervals(run_data, debug=False)
+    estimate_heart_rate_intervals(run_data, debug=True)
 
     df_pred = run_data.df_pred.copy()
 

@@ -27,9 +27,9 @@ logger = get_logger()
 def main():
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-29/'
     # folder_path = '/Users/ds/main/8sleep_biometrics/data/recent/'
-    folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-20/'
-    start_time = datetime.strptime('2025-01-10 06:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-    end_time =   datetime.strptime('2025-01-10 15:00:00', "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    folder_path = '/Users/ds/main/8sleep_biometrics/data/people/david/raw/loaded/2025-01-10/'
+    start_time = datetime.strptime('2025-01-10 06:00:00', "%Y-%m-%d %H:%M:%S")
+    end_time =   datetime.strptime('2025-01-10 15:00:00', "%Y-%m-%d %H:%M:%S")
     side: Side = 'right'
     clean = False
     data = load_raw_files(folder_path, start_time - timedelta(hours=12), end_time + timedelta(hours=2), side, sensor_count=1, raw_data_types=['capSense', 'piezo-dual'])

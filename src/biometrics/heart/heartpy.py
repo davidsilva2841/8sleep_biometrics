@@ -17,15 +17,14 @@ from heart.datautils import rolling_mean, outliers_iqr_method, outliers_modified
 from heart.preprocessing import enhance_peaks
 from heart.filtering import hampel_correcter
 
-from heart.peakdetection import check_peaks
+from heart.peakdetection import check_peaks, fit_peaks
+from heart.analysis import calc_rr
 import sys
-sys.path.append("/Users/ds/main/8sleep_biometrics/src/biometrics/heart/src/biometrics/heart/")
-from peakdetection_cython import fit_peaks, calc_rr
+# sys.path.append("/Users/ds/main/8sleep_biometrics/src/biometrics/heart/src/biometrics/heart/")
+# from peakdetection_cython import fit_peaks, calc_rr
 
 
 from heart.analysis import clean_rr_intervals, calc_ts_measures, calc_breathing, calc_poincare
-
-
 
 
 def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
