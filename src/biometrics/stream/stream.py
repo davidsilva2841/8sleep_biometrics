@@ -79,7 +79,7 @@ class LatestRawFileHandler(FileSystemEventHandler):
             try:
                 # Decode CBOR object from a **single line**
                 row = cbor2.load(self.latest_file_obj)  # Load the next CBOR object
-                one_minute_ago = datetime.now() - timedelta(minutes=1)
+                one_minute_ago = datetime.now() - timedelta(minutes=2)
 
                 if 'data' in row:  # Check if 'data' key exists
                     decoded_data = cbor2.loads(row['data'])

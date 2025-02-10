@@ -33,6 +33,8 @@ from heart.filtering import filter_signal, remove_baseline_wander
 from heart.preprocessing import  scale_data
 from heart.heartpy import process
 from get_logger import get_logger
+from db import insert_vitals
+
 
 logger = get_logger()
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -119,7 +121,6 @@ def _calculate(run_data: RunData, side: str):
         # clean_rr=True,
         clean_rr_method='quotient-filter',
     )
-    print(measurement)
     if run_data.is_valid(measurement):
         return {
             'start_time': run_data.start_interval.strftime('%Y-%m-%d %H:%M:%S'),
@@ -191,7 +192,7 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
                 else:
                     heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
-                run_data.heart_rates.append(heart_rate)
+            run_data.heart_rates.append(heart_rate)
 
             run_data.combined_measurements.append({
                 'start_time': run_data.start_interval.strftime('%Y-%m-%d %H:%M:%S'),
@@ -232,7 +233,7 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
                 else:
                     heart_rate = run_data.hr_moving_avg + run_data.hr_std_2
 
-                run_data.heart_rates.append(heart_rate)
+            run_data.heart_rates.append(heart_rate)
 
             measurement_2['heart_rate'] = heart_rate
             run_data.combined_measurements.append(measurement_2)

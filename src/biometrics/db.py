@@ -1,5 +1,10 @@
+import math
 import os.path
+
 import sys
+
+import numpy as np
+
 sys.path.append('/home/dac/python_packages/')
 import pandas as pd
 
@@ -43,6 +48,45 @@ def convert_timestamps(data: List[SleepRecord]) -> List[SleepRecord]:
         }
         formatted_data.append(formatted_entry)
     return formatted_data
+
+# Create a persistent connection
+conn = sqlite3.connect(DB_FILE_PATH, isolation_level=None, check_same_thread=False)
+conn.execute("PRAGMA journal_mode=WAL;")  # Enable WAL mode
+conn.execute("PRAGMA busy_timeout=5000;")  # Wait up to 5 seconds if locked
+cursor = conn.cursor()
+
+def insert_vitals(data: dict):
+    """
+    Inserts a record into the 'vitals' table. If a conflict occurs, it skips the insertion.
+    """
+    # conn = sqlite3.connect(DB_FILE_PATH)
+    # cursor = conn.cursor()
+
+    sql = """
+    INSERT INTO vitals (side, period_start, heart_rate, hrv, breathing_rate)
+    VALUES (:side, :period_start, :heart_rate, :hrv, :breathing_rate)
+    ON CONFLICT(side, period_start) DO NOTHING;
+    """
+    if np.isnan(data['hrv']):
+        data['hrv'] = 0
+    else:
+        data['hrv'] = math.floor(data['hrv'])
+
+    if np.isnan(data['breathing_rate']):
+        data['breathing_rate'] = 0
+    else:
+        data['breathing_rate'] = math.floor(data['breathing_rate'])
+
+    data['heart_rate'] = math.floor(data['heart_rate'])
+    print('Inserting row...')
+    print(json.dumps(data, indent=4))
+
+    try:
+        cursor.execute(sql, data)
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"SQLite error: {e}")
+
 
 
 def fetch_sleep_records_between(start_time: datetime, end_time: datetime, side: Side) -> List[SleepRecord]:
@@ -174,5 +218,8 @@ def insert_sleep_records(sleep_records: List[SleepRecord]):
     cur.close()
     conn.close()
     logger.debug(f"Inserted {len(sleep_records)} record(s) into 'sleep_records' (ignoring duplicates).")
+
+import atexit
+atexit.register(lambda: conn.close())
 
 

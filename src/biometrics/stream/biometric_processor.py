@@ -1,3 +1,4 @@
+import gc
 from typing import Union, Tuple, TypedDict, List, Optional
 import traceback
 import numpy as np
@@ -9,7 +10,7 @@ from vitals.cleaning import interpolate_outliers_in_wave
 from heart.preprocessing import scale_data
 from heart.filtering import filter_signal, remove_baseline_wander
 from heart.heartpy import process
-
+from db import insert_vitals
 from data_types import *
 logger = get_logger()
 
@@ -31,10 +32,13 @@ class BiometricProcessor:
             side: str = 'left',
             sensor_count=1,
             runtime_params: RuntimeParams = None,
+            insertion_frequency=60,
     ):
         self.present = False
         self.side = side
         self.sensor_count = sensor_count
+        self.insertion_frequency = insertion_frequency
+        self.iteration_count = 0
         if runtime_params is None:
             runtime_params: RuntimeParams = {
                 'window': 10,
@@ -66,19 +70,21 @@ class BiometricProcessor:
         self.hr_std_2 = None
 
     def reset(self):
+        self.iteration_count = 0
         self.init_tracking()
 
 
     def detect_presence(self, signal: np.ndarray):
         signal_range = np.ptp(signal)
-        if signal_range > 80_000:
+        if signal_range > 200_000:
+            self.not_present_for = 0
             self.present = True
-            logger.debug(f'{self.side} side is present! | Signal range: {signal_range:,}')
+            # logger.debug(f'{self.side} side is present! | Signal range: {signal_range:,}')
         else:
-            logger.debug(f'{self.side} side is not present')
+            # logger.debug(f'{self.side} side is not present')
             self.not_present_for += 1
             if self.not_present_for == self.no_presence_tolerance:
-                logger.debug(f'User not detected for: {self.no_presence_tolerance} seconds, resetting...')
+                logger.debug(f'User not detected for {self.no_presence_tolerance} seconds on {self.side} side, resetting...')
                 self.present = False
                 self.reset()
 
@@ -114,7 +120,8 @@ class BiometricProcessor:
         )
         if self.is_valid(measurement):
             return {
-                'ts': epoch,
+                'side': self.side,
+                'period_start': epoch,
                 'heart_rate': measurement['bpm'],
                 'hrv': measurement['sdnn'],
                 'breathing_rate': measurement['breathingrate'] * 60,
@@ -152,13 +159,16 @@ class BiometricProcessor:
                 else:
                     heart_rate = self.hr_moving_avg + self.hr_std_2
 
-                self.heart_rates.append(heart_rate)
+            self.heart_rates.append(heart_rate)
 
             self.combined_measurements.append({
-                'ts': epoch,
+                'side': self.side,
+                'period_start': epoch,
                 'heart_rate': heart_rate,
                 'hrv': (measurement_1['hrv'] + measurement_2['hrv']) / 2,
                 'breathing_rate': (measurement_1['breathing_rate'] + measurement_2['breathing_rate']) / 2 * 60,
+                # 'moving_average': self.hr_moving_avg,
+                # 'hr_std_2': self.hr_std_2,
             })
 
         elif measurement_1 is not None:
@@ -174,6 +184,8 @@ class BiometricProcessor:
             self.heart_rates.append(m1_heart_rate)
 
             measurement_1['heart_rate'] = m1_heart_rate
+            # measurement_1['moving_average'] = self.hr_moving_avg
+            # measurement_1['hr_std_2'] = self.hr_std_2
             self.combined_measurements.append(measurement_1)
 
         elif measurement_2 is not None:
@@ -190,12 +202,13 @@ class BiometricProcessor:
                 else:
                     heart_rate = self.hr_moving_avg + self.hr_std_2
 
-                self.heart_rates.append(heart_rate)
+            self.heart_rates.append(heart_rate)
 
             measurement_2['heart_rate'] = heart_rate
+            # measurement_2['moving_average'] = self.hr_moving_avg
+            # measurement_2['hr_std_2'] = self.hr_std_2
             self.combined_measurements.append(measurement_2)
-        if len(self.combined_measurements) > 0:
-            print(json.dumps(self.combined_measurements[-1], indent=4))
+
         self.next()
 
 
@@ -214,7 +227,17 @@ class BiometricProcessor:
 
 
     def next(self):
+        self.iteration_count += 1
+        if self.iteration_count % 60 == 0 and len(self.combined_measurements) > 0:
+            insert_vitals(self.combined_measurements[-1])
+            del self.combined_measurements
+            gc.collect()
+            self.combined_measurements = []
+
         if len(self.heart_rates) >= self.moving_avg_size:
+            if len(self.heart_rates) > self.moving_avg_size:
+                self.heart_rates.pop(-1)
+
             self.last_heart_rates = self.heart_rates[-self.moving_avg_size:]
             self.hr_moving_avg = np.mean(self.last_heart_rates)
 
