@@ -62,20 +62,19 @@ import numpy as np
 import random
 import time
 import traceback
-import warnings
 
 import tools
 
 
 from analyze import analyze_predictions
-from calculations import estimate_heart_rate_intervals, RunData
+from biometrics.vitals.calculations import estimate_heart_rate_intervals, RunData
 from config import PROJECT_FOLDER_PATH
 from data_manager import DataManager
 from globals import data_managers
 
 
 OUTPUT_FOLDER_PATH = f'{PROJECT_FOLDER_PATH}src/param_optimizer/results/'
-rolling_combinations = [
+ROLLING_COMBINATIONS = [
     {'r_window_avg': 2, 'r_min_periods': 2},
     {'r_window_avg': 5, 'r_min_periods': 2},
     {'r_window_avg': 5, 'r_min_periods': 5},
@@ -89,6 +88,30 @@ rolling_combinations = [
     {'r_window_avg': 30, 'r_min_periods': 20},
     {'r_window_avg': 30, 'r_min_periods': 30},
 ]
+PARAM_GRID = {
+    "slide_by": [1],
+    "window": [3],
+    "hr_std_range": [(1, 8), (1, 10), (1, 12), (1, 15)],
+    "hr_percentile": [(20, 75)],
+    "signal_percentile": [(0.25, 99.75), (0.5, 99.5), (1, 99)],
+    "moving_avg_size": [100, 120, 140],
+    'window_size': [0.65, 0.85, 0.95]
+}
+
+# PARAM_GRID = {
+#     "slide_by": [1],
+#     "window": [2, 3],
+#     "hr_std_range": [(1, 20)],
+#     "hr_percentile": [(20, 75)],
+#     "signal_percentile": [(0.5, 99.5)],
+#     "moving_avg_size": [120],
+#     'window_size': [0.25, 0.50, 0.75]
+# }
+
+# Generate all combinations of parameters with named keys
+PARAM_COMBINATIONS = [dict(zip(PARAM_GRID.keys(), values)) for values in itertools.product(*PARAM_GRID.values())]
+
+
 
 def hash_dict(result):
     # Convert dictionary to a JSON string with sorted keys for consistency
@@ -151,9 +174,9 @@ def run_prediction(param_groups):
                     sensor_count=data.sensor_count,
                     log=False
                 )
-                estimate_heart_rate_intervals(run_data)
+                estimate_heart_rate_intervals(run_data, debug=False)
                 gc.collect()
-                for combo in rolling_combinations:
+                for combo in ROLLING_COMBINATIONS:
                     try:
                         _attempt_rolling_combo(data, run_data, run_data.df_pred, params, combo, 'combined')
                     except Exception as e:
@@ -180,7 +203,7 @@ def run_prediction(param_groups):
 
 
 def monitor_progress():
-    permutations_per_period = len(rolling_combinations) * len(param_combinations)
+    permutations_per_period = len(ROLLING_COMBINATIONS) * len(PARAM_COMBINATIONS)
     total_periods = 0
 
     for d in data_managers:
@@ -217,21 +240,10 @@ def parallel_predictions(param_combinations):
 
 if __name__ == "__main__":
     # MUST MATCH RuntimeParams from src/run_data.py
-    param_grid = {
-        "slide_by": [1],
-        "window": [6, 10, 15],
-        "hr_std_range": [(1, 10), (1, 15), (1, 20), (1,10)],
-        "hr_percentile": [(15, 85), (15,80), (20, 75), (20,80), (25,75)],
-        "signal_percentile": [(0.5, 99.5), (1, 99), (2, 98), (1, 98), (0,99)],
-        "moving_avg_size": [120, 130]
-    }
 
-    # Generate all combinations of parameters with named keys
-    # param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
-    param_combinations = [dict(zip(param_grid.keys(), values)) for values in itertools.product(*param_grid.values())]
     # Start monitoring progress
     monitor_process = multiprocessing.Process(target=monitor_progress)
     monitor_process.start()
-    r = parallel_predictions(param_combinations)
+    r = parallel_predictions(PARAM_COMBINATIONS)
     monitor_process.join()
 

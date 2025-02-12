@@ -143,48 +143,7 @@ def append_dict(dict_obj, measure_key, measure_value):
 
 
 def detect_peaks(hrdata, rol_mean, ma_perc, sample_rate, update_dict=True, working_data={}):
-    '''detect peaks in signal
 
-    Function that detects heartrate peaks in the given dataset.
-
-    Parameters
-    ----------
-    hr data : 1-d numpy array or list
-        array or list containing the heart rate data
-
-    rol_mean : 1-d numpy array
-        array containing the rolling mean of the heart rate signal
-
-    ma_perc : int or float
-        the percentage with which to raise the rolling mean,
-        used for fitting detection solutions to data
-
-    sample_rate : int or float
-        the sample rate of the provided data set
-
-    update_dict : bool
-        whether to update the peak information in the module's data structure
-        Settable to False to allow this function to be re-used for example by
-        the breath analysis module.
-        default : True
-
-    Examples
-    --------
-    Normally part of the peak detection pipeline. Given the first example data
-    it would work like this:
-
-    >>> import heartpy as hp
-    >>> from heartpy.datautils import rolling_mean, _sliding_window
-    >>> data, _ = hp.load_exampledata(0)
-    >>> rol_mean = rolling_mean(data, windowsize = 0.75, sample_rate = 100.0)
-    >>> wd = detect_peaks(data, rol_mean, ma_perc = 20, sample_rate = 100.0)
-
-    Now the peaklist has been appended to the working data dict. Let's look
-    at the first five peak positions:
-
-    >>> wd['peaklist'][0:5]
-    [63, 165, 264, 360, 460]
-    '''
     rmean = np.array(rol_mean)
 
     #rol_mean = rmean + ((rmean / 100) * ma_perc)
@@ -193,9 +152,13 @@ def detect_peaks(hrdata, rol_mean, ma_perc, sample_rate, update_dict=True, worki
 
     peaksx = np.where((hrdata > rol_mean))[0]
     peaksy = hrdata[peaksx]
-    peakedges = np.concatenate((np.array([0]),
-                                (np.where(np.diff(peaksx) > 1)[0]),
-                                np.array([len(peaksx)])))
+    peakedges = np.concatenate(
+        (
+            np.array([0]),
+            (np.where(np.diff(peaksx) > 1)[0]),
+            np.array([len(peaksx)])
+         )
+    )
     peaklist = []
 
     for i in range(0, len(peakedges)-1):
@@ -209,8 +172,11 @@ def detect_peaks(hrdata, rol_mean, ma_perc, sample_rate, update_dict=True, worki
         working_data['peaklist'] = peaklist
         working_data['ybeat'] = [hrdata[x] for x in peaklist]
         working_data['rolling_mean'] = rol_mean
-        working_data = calc_rr(working_data['peaklist'], sample_rate,
-                               working_data=working_data)
+        working_data = calc_rr(
+            working_data['peaklist'],
+            sample_rate,
+            working_data=working_data
+        )
         if len(working_data['RR_list']) > 0:
             working_data['rrsd'] = np.std(working_data['RR_list'])
         else:
@@ -259,8 +225,14 @@ def fit_peaks(hrdata, rol_mean, sample_rate, bpmmin=40, bpmmax=180, working_data
     valid_ma = []
 
     for ma_perc in ma_perc_list:
-        working_data = detect_peaks(hrdata, rol_mean, ma_perc, sample_rate,
-                                    update_dict=True, working_data=working_data)
+        working_data = detect_peaks(
+            hrdata,
+            rol_mean,
+            ma_perc,
+            sample_rate,
+            update_dict=True,
+            working_data=working_data
+        )
         bpm = ((len(working_data['peaklist'])/(len(hrdata)/sample_rate))*60)
         rrsd.append([working_data['rrsd'], bpm, ma_perc])
 
@@ -270,8 +242,14 @@ def fit_peaks(hrdata, rol_mean, sample_rate, bpmmin=40, bpmmax=180, working_data
 
     if len(valid_ma) > 0:
         working_data['best'] = min(valid_ma, key=lambda t: t[0])[1]
-        working_data = detect_peaks(hrdata, rol_mean, min(valid_ma, key=lambda t: t[0])[1],
-                                    sample_rate, update_dict=True, working_data=working_data)
+        working_data = detect_peaks(
+            hrdata,
+            rol_mean,
+            min(valid_ma, key=lambda t: t[0])[1],
+            sample_rate,
+            update_dict=True,
+            working_data=working_data
+        )
         return working_data
     else:
         raise BadSignalWarning('\n----------------\nCould not determine best fit for \

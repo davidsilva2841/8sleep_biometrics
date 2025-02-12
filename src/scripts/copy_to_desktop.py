@@ -9,12 +9,12 @@ from config import PROJECT_FOLDER_PATH
 
 
 PEOPLE = [
-    DataManager('alina', load=False),
+    # DataManager('alina', load=False),
     DataManager('david', load=False),
-    DataManager('elisa', load=False),
-    DataManager('den', load=False),
-    DataManager('tally', load=False),
-    DataManager('trinity', load=False),
+    # DataManager('elisa', load=False),
+    # DataManager('den', load=False),
+    # DataManager('tally', load=False),
+    # DataManager('trinity', load=False),
 ]
 
 def get_ssh_config():
@@ -93,7 +93,7 @@ def scp_file_to_remote(local_file, host_alias, remote_path):
         ssh.close()
 
 
-def copy_to_pod():
+def copy_to_desktop():
     file_paths = get_file_paths()
     bar = tools.progress_bar(file_paths)
     for local_file in file_paths:
@@ -102,7 +102,7 @@ def copy_to_pod():
         if not os.path.isfile(local_file):
             continue
 
-
+        print(f'Copying file: {local_file}')
         scp_file_to_remote(
             local_file=local_file,
             host_alias="desktop",
@@ -110,4 +110,4 @@ def copy_to_pod():
         )
 
 
-copy_to_pod()
+copy_to_desktop()

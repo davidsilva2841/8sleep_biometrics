@@ -26,7 +26,6 @@ class BiometricProcessor:
     upper_bound: Optional[np.floating]    # Upper bound of HR (None if not set)
     hr_moving_avg: Optional[np.floating]  # Current moving average heart rate
     hr_std_2: Optional[float]       # Standard deviation of heart rate
-
     def __init__(
             self,
             side: str = 'left',
@@ -41,12 +40,13 @@ class BiometricProcessor:
         self.iteration_count = 0
         if runtime_params is None:
             runtime_params: RuntimeParams = {
-                'window': 10,
+                'window': 3,
                 'slide_by': 1,
-                'moving_avg_size': 120,
-                'hr_std_range': (1, 20),
+                'moving_avg_size': 100,
+                'hr_std_range': (1, 10),
                 'hr_percentile': (20, 75),
                 'signal_percentile': (0.5, 99.5),
+                'window_size': 0.85,
             }
 
         self.slide_by = runtime_params['slide_by']  # Sliding window step size in seconds
@@ -55,6 +55,7 @@ class BiometricProcessor:
         self.hr_percentile = runtime_params['hr_percentile']  # Accepted percentile range for heart rate (lower, upper)
         self.moving_avg_size = runtime_params['moving_avg_size']  # Moving average window size in seconds
         self.signal_percentile = runtime_params['signal_percentile']  # Percent of outliers from raw signal to replace
+        self.window_size = runtime_params['window_size']
         self.init_tracking()
         self.no_presence_tolerance = 10
         self.not_present_for = 0
@@ -115,8 +116,9 @@ class BiometricProcessor:
             bpmmin=40,
             bpmmax=90,
             reject_segmentwise=False,
-            windowsize=0.50,
+            windowsize=self.window_size,
             clean_rr_method='quotient-filter',
+            calculate_breathing=True,
         )
         if self.is_valid(measurement):
             return {

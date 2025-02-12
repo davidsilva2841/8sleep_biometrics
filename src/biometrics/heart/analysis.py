@@ -577,61 +577,7 @@ def calc_fd_measures(method='welch', welch_wsize=240, square_spectrum=False, mea
 
 def calc_breathing(rrlist, method='welch', filter_breathing=True,
                    bw_cutoff=[0.1, 0.4], measures={}, working_data={}):
-    '''estimates breathing rate
 
-    Function that estimates breathing rate from heart rate signal.
-    Upsamples the list of detected rr_intervals by interpolation then
-    tries to extract breathing peaks in the signal.
-
-    Parameters
-    ----------
-    rr_list : 1d list or array
-        list or array containing peak-peak intervals
-
-    method : str
-        method to use to get the spectrogram, must be 'fft' or 'welch'
-        default : fft
-
-    filter_breathing : bool
-        whether to filter the breathing signal derived from the peak-peak intervals
-        default : True
-
-    bw_cutoff : list or tuple
-        breathing frequency range expected
-        default : [0.1, 0.4], meaning between 6 and 24 breaths per minute
-
-    measures : dict
-        dictionary object used by heartpy to store computed measures. Will be created
-        if not passed to function.
-
-    working_data : dict
-        dictionary object that contains all heartpy's working data (temp) objects.
-        will be created if not passed to function
-
-    Returns
-    -------
-    measures : dict
-        dictionary object used by heartpy to store computed measures.
-
-    Examples
-    --------
-    Normally this function is called during the process pipeline of HeartPy. It can
-    of course also be used separately.
-
-    Let's load an example and get a list of peak-peak intervals
-
-    >>> import heartpy as hp
-    >>> data, _ = hp.load_exampledata(0)
-    >>> wd, m = hp.process(data, 100.0)
-
-    Breathing is then computed with the function
-
-    >>> m, wd = calc_breathing(wd['RR_list_cor'], measures = m, working_data = wd)
-    >>> round(m['breathingrate'], 3)
-    0.171
-
-    There we have it, .17Hz, or about one breathing cycle in 6.25 seconds.
-    '''
 
     #resample RR-list to 1000Hz
     x = np.linspace(0, len(rrlist), len(rrlist))

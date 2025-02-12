@@ -27,22 +27,20 @@ import sys
 from heart.analysis import clean_rr_intervals, calc_ts_measures, calc_breathing, calc_poincare
 
 
-def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
-            calc_freq=False, freq_method='welch', welch_wsize=240, freq_square=False,
-            interp_clipping=False, clipping_scale=False, interp_threshold=1020,
-            hampel_correct=False, bpmmin=40, bpmmax=180, reject_segmentwise=False,
-            high_precision=False, high_precision_fs=1000.0, breathing_method='welch',
-            clean_rr=False, clean_rr_method='quotient-filter', measures=None, working_data=None):
-
-    #initialize dicts if needed
+def process(
+        hrdata: np.ndarray,
+        sample_rate: int,
+        windowsize: float=0.75,
+        bpmmin: int=40,
+        bpmmax: int=180,
+        reject_segmentwise=False,
+        breathing_method='welch',
+        clean_rr_method='quotient-filter',
+        calculate_breathing=True,
+):
     measures = {}
 
     working_data = {}
-
-
-    if hampel_correct: # pragma: no cover
-        hrdata = enhance_peaks(hrdata)
-        hrdata = hampel_correcter(hrdata, sample_rate)
 
     # check that the data has positive baseline for the moving average algorithm to work
     bl_val = np.percentile(hrdata, 0.1)
@@ -52,31 +50,66 @@ def process(hrdata, sample_rate, windowsize=0.75, report_time=False,
     working_data['hr'] = hrdata
     working_data['sample_rate'] = sample_rate
 
-    rol_mean = rolling_mean(hrdata, windowsize, sample_rate)
+    rol_mean = rolling_mean(
+        hrdata,
+        windowsize,
+        sample_rate
+    )
 
-    working_data = fit_peaks(hrdata, rol_mean, sample_rate, bpmmin=bpmmin,
-                             bpmmax=bpmmax, working_data=working_data)
+    working_data = fit_peaks(
+        hrdata,
+        rol_mean,
+        sample_rate,
+        bpmmin=bpmmin,
+        bpmmax=bpmmax,
+        working_data=working_data
+    )
 
-    working_data = calc_rr(working_data['peaklist'], sample_rate, working_data=working_data)
+    working_data = calc_rr(
+        working_data['peaklist'],
+        sample_rate,
+        working_data=working_data
+    )
 
-    working_data = check_peaks(working_data['RR_list'], working_data['peaklist'], working_data['ybeat'],
-                               reject_segmentwise, working_data=working_data)
+    working_data = check_peaks(
+        working_data['RR_list'],
+        working_data['peaklist'],
+        working_data['ybeat'],
+        reject_segmentwise,
+        working_data=working_data
+    )
 
     # if clean_rr:
-    working_data = clean_rr_intervals(working_data, method = clean_rr_method)
+    working_data = clean_rr_intervals(
+        working_data,
+        method = clean_rr_method
+    )
 
-    working_data, measures = calc_ts_measures(working_data['RR_list_cor'], working_data['RR_diff'],
-                                              working_data['RR_sqdiff'], measures=measures,
-                                              working_data=working_data)
+    working_data, measures = calc_ts_measures(
+        working_data['RR_list_cor'],
+        working_data['RR_diff'],
+        working_data['RR_sqdiff'],
+        measures=measures,
+        working_data=working_data
+    )
 
-    measures = calc_poincare(working_data['RR_list'], working_data['RR_masklist'], measures = measures,
-                             working_data = working_data)
+    measures = calc_poincare(
+        working_data['RR_list'],
+        working_data['RR_masklist'],
+        measures = measures,
+        working_data = working_data
+    )
 
-    try:
-        measures, working_data = calc_breathing(working_data['RR_list_cor'], method=breathing_method,
-                                                measures=measures, working_data=working_data)
-    except:
-        measures['breathingrate'] = np.nan
+    if calculate_breathing:
+        try:
+            measures, working_data = calc_breathing(
+                working_data['RR_list_cor'],
+                method=breathing_method,
+                measures=measures,
+                working_data=working_data
+            )
+        except:
+            measures['breathingrate'] = np.nan
 
 
     return working_data, measures

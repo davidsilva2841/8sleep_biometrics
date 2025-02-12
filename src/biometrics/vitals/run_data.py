@@ -78,7 +78,7 @@ class RuntimeParams(TypedDict):
     hr_std_range: Tuple[int, int]
     hr_percentile: Tuple[int, int]
     signal_percentile: Tuple[float, float]
-
+    window_size: float
 
 class Accuracy(TypedDict):
     window: int
@@ -131,6 +131,7 @@ class RunData:
         self.hr_percentile = runtime_params['hr_percentile']  # Accepted percentile range for heart rate (lower, upper)
         self.moving_avg_size = runtime_params['moving_avg_size']  # Moving average window size in seconds
         self.signal_percentile = runtime_params['signal_percentile']  # Percent of outliers from raw signal to replace
+        self.window_size = runtime_params['window_size']
 
         self.name: str = name  # Name
         self.side: str = side  # Side of the bed (e.g., 'left', 'right')
@@ -172,14 +173,7 @@ class RunData:
                 'label': label,
                 'elapsed': 0,
             },
-            'runtime_params': {
-                'window': self.window,
-                'slide_by': self.slide_by,
-                'moving_avg_size': self.moving_avg_size,
-                'hr_std_range': self.hr_std_range,
-                'signal_percentile': self.signal_percentile,
-                'hr_percentile': self.hr_percentile,
-            },
+            'runtime_params': runtime_params
         }
 
         # Metrics for tracking progress
@@ -196,7 +190,8 @@ class RunData:
             raise Exception(f'end_time is before start_time: {start_time} -> {end_time}')
         self.total_intervals = math.ceil(total_seconds / self.slide_by)
         self.progress_bar_update_interval = 100
-        self.bar = tqdm(total=math.ceil(self.total_intervals / self.progress_bar_update_interval))
+        if self.log:
+            self.bar = tqdm(total=math.ceil(self.total_intervals / self.progress_bar_update_interval))
         self.timer_start = None
         self.timer_end = None
         self.elapsed_time = None
@@ -294,23 +289,16 @@ class RunData:
             if self.log:
                 print(f'EMPTY DATAFRAME {self.name} {self.start_time} -> {self.end_time}')
 
-        # self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
-        # if not self.df_pred_side_1.empty:
-        #     self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
-        #     self.df_pred_side_1.sort_values(by='start_time', inplace=True)
-        #
-        # self.df_pred_side_2 = pd.DataFrame(self.measurements_side_2)
-        # if not self.df_pred_side_2.empty:
-        #     self.df_pred_side_2.dropna(subset=['heart_rate'], inplace=True)
-        #     self.df_pred_side_2.sort_values(by='start_time', inplace=True)
+        self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
+        if not self.df_pred_side_1.empty:
+            self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
+            self.df_pred_side_1.sort_values(by='start_time', inplace=True)
+
+        self.df_pred_side_2 = pd.DataFrame(self.measurements_side_2)
+        if not self.df_pred_side_2.empty:
+            self.df_pred_side_2.dropna(subset=['heart_rate'], inplace=True)
+            self.df_pred_side_2.sort_values(by='start_time', inplace=True)
 
 
-        # self.df_pred_side_1 = pd.DataFrame(self.measurements_side_1)
-        # self.df_pred_side_1.dropna(subset=['heart_rate'], inplace=True)
-        # self.df_pred_side_1.sort_values(by='start_time', inplace=True)
-        #
-        # self.df_pred_side_2 = pd.DataFrame(self.measurements_side_2)
-        # self.df_pred_side_2.dropna(subset=['heart_rate'], inplace=True)
-        # self.df_pred_side_2.sort_values(by='start_time', inplace=True)
 
 # endregion

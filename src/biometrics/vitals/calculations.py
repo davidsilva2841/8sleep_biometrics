@@ -30,11 +30,9 @@ sys.path.append(os.getcwd())
 from data_types import *
 from vitals.cleaning import interpolate_outliers_in_wave
 from heart.filtering import filter_signal, remove_baseline_wander
-from heart.preprocessing import  scale_data
+from heart.preprocessing import scale_data, enhance_ecg_peaks
 from heart.heartpy import process
 from get_logger import get_logger
-from db import insert_vitals
-
 
 logger = get_logger()
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -110,16 +108,13 @@ def _calculate(run_data: RunData, side: str):
     working_data, measurement = process(
         data,
         500,
-        # freq_method='fft',
         breathing_method='fft',
         bpmmin=40,
         bpmmax=90,
-        # hampel_correct=False,      # KEEP FALSE - Takes too long
         reject_segmentwise=False,  # KEEP FALSE - Less accurate
-        windowsize=0.50,
-        # clipping_scale=False,
-        # clean_rr=True,
+        windowsize=run_data.window_size,
         clean_rr_method='quotient-filter',
+        calculate_breathing=True,
     )
     if run_data.is_valid(measurement):
         return {
@@ -128,6 +123,7 @@ def _calculate(run_data: RunData, side: str):
             'heart_rate': measurement['bpm'],
             'hrv': measurement['sdnn'],
             'breathing_rate': measurement['breathingrate'] * 60,
+            # 'breathing_rate': 0,
         }
     return None
 
@@ -151,7 +147,7 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
     --------
     >>> estimate_heart_rate_intervals(run_data)
     """
-    if not debug:
+    if not debug and run_data.log:
         logger.warning('debug=False, errors will fail SILENTLY, pass debug=True in order to see errors')
 
     if run_data.log:
@@ -176,8 +172,8 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
                 run_data.sensor_2_error_count += 1
 
         if measurement_1 is not None and measurement_2 is not None:
-            # run_data.measurements_side_1.append(measurement_1)
-            # run_data.measurements_side_2.append(measurement_2)
+            run_data.measurements_side_1.append(measurement_1)
+            run_data.measurements_side_2.append(measurement_2)
 
             m1_heart_rate = measurement_1['heart_rate']
             m2_heart_rate = measurement_2['heart_rate']
@@ -203,7 +199,7 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
             })
 
         elif measurement_1 is not None:
-            # run_data.measurements_side_1.append(measurement_1)
+            run_data.measurements_side_1.append(measurement_1)
             m1_heart_rate = measurement_1['heart_rate']
 
             # If the HR differs by more than the allowable movement
@@ -237,7 +233,7 @@ def estimate_heart_rate_intervals(run_data: RunData, debug=False):
 
             measurement_2['heart_rate'] = heart_rate
             run_data.combined_measurements.append(measurement_2)
-            # run_data.measurements_side_2.append(measurement_2)
+            run_data.measurements_side_2.append(measurement_2)
 
 
         run_data.next()
