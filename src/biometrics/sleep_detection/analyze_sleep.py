@@ -1,5 +1,5 @@
 # python3 analyze_sleep.py --side=right --start_time="2025-02-07 04:00:00" --end_time="2025-02-07 15:00:00"
-# python3 analyze_sleep.py --side=right --start_time="2025-02-08 03:00:00" --end_time="2025-02-08 15:00:00"
+# cd /home/dac/free-sleep/biometrics/sleep_detection && python3 analyze_sleep.py --side=left --start_time="2025-02-13 03:00:00" --end_time="2025-02-13 15:00:00"
 # TODO: Support users manually starting/ending sleep time
 
 import sys
@@ -19,7 +19,7 @@ import numpy as np
 sys.path.append(os.getcwd())
 
 from sleep_detector import detect_sleep
-from resource_usage import get_memory_usage_unix, get_free_memory_mb
+from resource_usage import get_memory_usage_unix, get_available_memory_mb
 from utils import validate_datetime_utc
 from get_logger import get_logger
 
@@ -86,7 +86,7 @@ def main():
             FOLDER_PATH
         )
         logger.debug(f"END Memory Usage: {get_memory_usage_unix():.2f} MB")
-        logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
+        logger.debug(f"Free Memory: {get_available_memory_mb()} MB")
 
     except Exception as e:
         logger.error(e)
@@ -97,8 +97,8 @@ def main():
 
 if __name__ == "__main__":
     logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-    logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
-    if get_free_memory_mb() < 400:
+    logger.debug(f"Free Memory: {get_available_memory_mb()} MB")
+    if get_available_memory_mb() < 400:
         error = MemoryError('Available memory is too little, exiting...')
         logger.error(error)
         raise error

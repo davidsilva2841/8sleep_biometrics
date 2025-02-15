@@ -24,7 +24,7 @@ sys.path.append(os.getcwd())
 from data_types import *
 from get_logger import get_logger
 from utils import validate_datetime_utc
-from resource_usage import get_memory_usage_unix, get_free_memory_mb
+from resource_usage import get_memory_usage_unix, get_available_memory_mb
 from load_raw_files import load_raw_files
 from calculations import estimate_heart_rate_intervals, clean_df_pred
 from run_data import RunData, RuntimeParams
@@ -168,13 +168,13 @@ def calculate_vitals(start_time: datetime, end_time: datetime, side: Side, folde
 
 
 if __name__ == "__main__":
-    if get_free_memory_mb() < 400:
+    if get_available_memory_mb() < 400:
         error = MemoryError('Available memory is too little, exiting...')
         logger.error(error)
         raise error
     args = _parse_args()
     logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-    logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
+    logger.debug(f"Free Memory: {get_available_memory_mb()} MB")
 
     calculate_vitals(args.start_time, args.end_time, args.side, '/persistent/')
 

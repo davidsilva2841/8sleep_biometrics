@@ -32,11 +32,13 @@ class BiometricProcessor:
             sensor_count=1,
             runtime_params: RuntimeParams = None,
             insertion_frequency=60,
+            insert_to_sql=True,
     ):
         self.present = False
         self.side = side
         self.sensor_count = sensor_count
         self.insertion_frequency = insertion_frequency
+        self.insert_to_sql = insert_to_sql
         self.iteration_count = 0
         if runtime_params is None:
             runtime_params: RuntimeParams = {
@@ -45,8 +47,8 @@ class BiometricProcessor:
                 'moving_avg_size': 100,
                 'hr_std_range': (1, 10),
                 'hr_percentile': (20, 75),
-                'signal_percentile': (0.5, 99.5),
-                'window_size': 0.85,
+                'signal_percentile': (0.2, 99.8),
+                'window_size': 0.65,
             }
 
         self.slide_by = runtime_params['slide_by']  # Sliding window step size in seconds
@@ -60,6 +62,7 @@ class BiometricProcessor:
         self.no_presence_tolerance = 10
         self.not_present_for = 0
         self.combined_measurements = []
+        self.smoothed_measurements = []
 
     def init_tracking(self):
         # Running metrics
@@ -94,8 +97,8 @@ class BiometricProcessor:
         # Remove outliers from signal
         data = interpolate_outliers_in_wave(
             signal,
-            lower_percentile=self.hr_percentile[0],
-            upper_percentile=self.hr_percentile[1],
+            lower_percentile=self.signal_percentile[0],
+            upper_percentile=self.signal_percentile[1],
         )
 
         data = scale_data(data, lower=0, upper=1024)
@@ -230,16 +233,24 @@ class BiometricProcessor:
 
     def next(self):
         self.iteration_count += 1
-        if self.iteration_count % 60 == 0 and len(self.combined_measurements) > 0:
-            insert_vitals(self.combined_measurements[-1])
-            del self.combined_measurements
-            gc.collect()
-            self.combined_measurements = []
+        if self.iteration_count % self.insertion_frequency == 0 and len(self.combined_measurements) > 0:
+            if self.insert_to_sql:
+                # Convert last heart rate to average
+                self.combined_measurements[-1]['heart_rate'] = np.mean(self.heart_rates[-20:])
+                insert_vitals(self.combined_measurements[-1])
+
+                del self.combined_measurements
+                gc.collect()
+                self.combined_measurements = []
+            else:
+                smoothed_measurement = {**self.combined_measurements[-1], 'heart_rate': np.mean(self.heart_rates[-20:])}
+                self.smoothed_measurements.append(smoothed_measurement)
+
 
         if len(self.heart_rates) >= self.moving_avg_size:
             if len(self.heart_rates) > self.moving_avg_size:
-                self.heart_rates.pop(-1)
-
+                self.heart_rates.pop(0)
+            # TODO: Remove last heart rates and use heart_rates, just keep heart_rates to most recent X
             self.last_heart_rates = self.heart_rates[-self.moving_avg_size:]
             self.hr_moving_avg = np.mean(self.last_heart_rates)
 

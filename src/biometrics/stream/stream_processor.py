@@ -19,8 +19,8 @@ class StreamProcessor:
 
         self.left_side_present = False
         self.right_side_present = False
-        self.left_processor = BiometricProcessor(side='left', sensor_count=self.sensor_count)
-        self.right_processor = BiometricProcessor(side='right', sensor_count=self.sensor_count)
+        self.left_processor = BiometricProcessor(side='left', sensor_count=self.sensor_count, insertion_frequency=60)
+        self.right_processor = BiometricProcessor(side='right', sensor_count=self.sensor_count, insertion_frequency=60)
         self.midpoint = math.floor(buffer_size / 2)
         self.iteration_count = 0
 

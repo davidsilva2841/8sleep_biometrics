@@ -91,11 +91,11 @@ ROLLING_COMBINATIONS = [
 PARAM_GRID = {
     "slide_by": [1],
     "window": [3],
-    "hr_std_range": [(1, 8), (1, 10), (1, 12), (1, 15)],
-    "hr_percentile": [(20, 75)],
-    "signal_percentile": [(0.25, 99.75), (0.5, 99.5), (1, 99)],
-    "moving_avg_size": [100, 120, 140],
-    'window_size': [0.65, 0.85, 0.95]
+    "hr_std_range": [(1, 10)],
+    "hr_percentile": [(15, 80), (20,80), (15,85)],
+    "signal_percentile": [(0.05, 99.95), (0.10, 99.9), (0.20, 99.8)],
+    "moving_avg_size": [120, 125, 130],
+    'window_size': [0.65, 0.70,  0.75]
 }
 
 # PARAM_GRID = {
@@ -212,12 +212,14 @@ def monitor_progress():
     total_expected_files = permutations_per_period * total_periods * 3 # *3 for each side + combined
 
     bar = tools.progress_bar(total_expected_files)
+    starting_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH))
 
-    last_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH))
-    bar.update(last_file_count)
+    last_file_count = 0
+    bar.update(1)
     print(f'Expecting {total_expected_files:,} files...')
     while last_file_count < total_expected_files - 10:
-        new_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH))
+        new_file_count = len(tools.list_dir_files(OUTPUT_FOLDER_PATH)) - starting_file_count
+
         increment = new_file_count - last_file_count
         bar.update(increment)
         last_file_count = new_file_count

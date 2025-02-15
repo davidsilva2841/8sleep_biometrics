@@ -40,7 +40,7 @@ class LatestRawFileHandler(FileSystemEventHandler):
 
     def track_latest_file(self):
         """Finds the most recent RAW file in the directory and starts tracking it."""
-        raw_files = [f for f in os.listdir(self.directory) if f.endswith(".RAW")]
+        raw_files = [f for f in os.listdir(self.directory) if f.endswith(".RAW") and not f.endswith('SEQNO.RAW')]
         if not raw_files:
             return
 

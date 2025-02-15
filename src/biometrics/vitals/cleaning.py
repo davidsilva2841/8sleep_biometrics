@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def interpolate_outliers_in_wave(data, lower_percentile: int = 2, upper_percentile: int = 98):
+def interpolate_outliers_in_wave(data, lower_percentile: float = 2, upper_percentile: float = 98):
     """
     Replaces outliers in the data using linear interpolation.
 

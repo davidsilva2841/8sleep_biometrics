@@ -56,6 +56,8 @@ SLEEP_DATA: SleepDataType = {
             {'start_time': '2025-01-25 08:00:00', 'end_time': '2025-01-25 14:43:00', 'side': 'right'},
             {'start_time': '2025-01-26 07:55:00', 'end_time': '2025-01-26 14:43:00', 'side': 'right'},
             {'start_time': '2025-01-27 06:15:00', 'end_time': '2025-01-27 14:53:00', 'side': 'right'},
+            {'start_time': '2025-02-14 06:35:00', 'end_time': '2025-02-14 14:29:00', 'side': 'right'},
+            {'start_time': '2025-02-15 07:01:00', 'end_time': '2025-02-15 14:44:00', 'side': 'right'},
         ]
     },
     'den': {

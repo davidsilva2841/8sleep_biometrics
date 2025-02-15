@@ -28,3 +28,20 @@ def get_free_memory_mb():
 
     # If MemFree is not found
     return 0.0
+
+
+def get_available_memory_mb():
+    """
+    Returns the available memory in MB by reading /proc/meminfo (Linux only).
+    """
+    meminfo_path = "/proc/meminfo"
+    if not os.path.exists(meminfo_path):
+        raise EnvironmentError("This function is supported only on Linux systems with /proc/meminfo.")
+
+    with open(meminfo_path, "r") as meminfo:
+        for line in meminfo:
+            if line.startswith("MemAvailable:"):
+                available_kb = int(line.split()[1])  # Extract value in KB
+                return available_kb / 1024
+
+    return 0.0

@@ -220,11 +220,16 @@ def _plot_validation_data(
             label='Heart Rate',
             s=30,
         )
+        print('-----------------------------------------------------------------------------------------------------')
 
-        axes[1].set_ylim(estimated_df_resampled['heart_rate'].min() - 2, estimated_df_resampled['heart_rate'].max() + 2)
-        axes[1].set_ylabel("Heart Rate (count/min)")
-        axes[1].legend(loc='upper left')
-        axes[1].grid(True)
+        print()
+        min_val = estimated_df_resampled['heart_rate'].min()
+        max_val = estimated_df_resampled['heart_rate'].max()
+        if not np.isnan(min_val) and not np.isnan(max_val):
+            axes[1].set_ylim(estimated_df_resampled['heart_rate'].min() - 2, estimated_df_resampled['heart_rate'].max() + 2)
+            axes[1].set_ylabel("Heart Rate (count/min)")
+            axes[1].legend(loc='upper left')
+            axes[1].grid(True)
 
         # Plot 3: HRV
         axes[2].plot(
@@ -308,8 +313,9 @@ def _plot_validation_data(
         rmse = results["heart_rate"]['accuracy']["rmse"]
         corr = results["heart_rate"]['accuracy']["corr"]
         file_name = f'{data.name}_{end_time[:10]}_rmse_{rmse}_corr_{corr}.png'
-        if chart_info['labels']['label']:
-            file_name = chart_info['labels']['label'] + '_' + file_name
+        if chart_info is not None and 'labels' in chart_info:
+            if 'label' in chart_info['labels']:
+                file_name = chart_info['labels']['label'] + '_' + file_name
         save_path = f'{PROJECT_FOLDER_PATH}tmp/plots/{file_name}'
         print(f'Saving plot to: {save_path}')
         plt.savefig(save_path, bbox_inches="tight", dpi=300)

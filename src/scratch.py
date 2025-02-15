@@ -1,8 +1,8 @@
-# scp -r -P 8822 'root@192.168.1.50:/persistent/*.RAW' /Users/david/8sleep/raw
 import gc
 
 import pandas as pd
 import warnings
+import requests
 from scipy.signal import resample
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -21,8 +21,30 @@ from vitals.run_data import RuntimeParams
 from data_manager import DataManager
 
 def main():
-    data = DataManager('trinity', load=True)
-    period = data.sleep_periods[0]
+    data = DataManager('david', load=True)
+    data._update_piezo_df()
+    period = data.sleep_periods[-1]
+    start_time = period['start_time']
+    end_time = period['end_time']
+
+    resp = requests.get('http://192.168.50.231:3000/api/metrics/vitals?side=right')
+    resp.json()
+    df_pred = pd.DataFrame(resp.json())
+
+    df_pred.dropna(subset=['heart_rate'], inplace=True)
+    df_pred['start_time'] = df_pred['period_start']
+    data.heart_rate_df.dtypes
+    df_pred["start_time"] = pd.to_datetime(df_pred["start_time"], utc=True)
+    # Convert to naive datetime (remove timezone)
+    df_pred["start_time"] = df_pred["start_time"].dt.tz_localize(None)
+    df_pred = df_pred[df_pred['start_time'] > '2025-02-15']
+    df_pred = df_pred[df_pred['start_time'] > start_time]
+    df_pred.sort_values(by='start_time', inplace=True)
+    results = analyze_predictions(data, df_pred, start_time, end_time, chart_info={'labels': {'start_time': start_time, 'end_time': end_time}}, plot=True)
+    df = data.piezo_df[data.piezo_df.index  > '2025-02-14']
+    data.piezo_df.tail()
+    data.load_new_raw_data()
+
 
 
     # for name in ['alina', 'den', 'elisa', 'trinity', 'tally', 'david']:
@@ -39,8 +61,8 @@ def main():
                 'moving_avg_size': 100,
                 'hr_std_range': (1, 10),
                 'hr_percentile': (20, 75),
-                'signal_percentile': (0.5, 99.5),
-                'window_size': 0.85,
+                'signal_percentile': (0.2, 99.8),
+                'window_size': 0.65,
             }
             run_data = RunData(
                 data.piezo_df,

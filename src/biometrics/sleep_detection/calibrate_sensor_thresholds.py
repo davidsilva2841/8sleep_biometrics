@@ -22,7 +22,7 @@ from data_types import *
 from load_raw_files import load_raw_files
 from piezo_data import load_piezo_df, detect_presence_piezo, identify_baseline_period
 from cap_data import load_cap_df, create_cap_baseline_from_cap_df, save_baseline
-from resource_usage import get_memory_usage_unix, get_free_memory_mb
+from resource_usage import get_memory_usage_unix, get_available_memory_mb
 from get_logger import get_logger
 
 logger = get_logger()
@@ -114,8 +114,8 @@ def calibrate_sensor_thresholds(side: Side, start_time: datetime, end_time: date
 if __name__ == "__main__":
     if logger.env == 'prod':
         logger.debug(f"Memory Usage: {get_memory_usage_unix():.2f} MB")
-        logger.debug(f"Free Memory: {get_free_memory_mb()} MB")
-        if get_free_memory_mb() < 300:
+        logger.debug(f"Free Memory: {get_available_memory_mb()} MB")
+        if get_available_memory_mb() < 300:
             error = MemoryError('Available memory is too little, exiting...')
             logger.error(error)
             raise error

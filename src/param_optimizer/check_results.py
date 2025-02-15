@@ -104,7 +104,8 @@ top_100_df['signal_percentile'].value_counts()
 top_100_df['moving_avg_size'].value_counts()
 top_100_df['r_window_avg'].value_counts()
 top_100_df['r_min_periods'].value_counts()
-best = df[df['key'] == '2cb42ee0540403b24f0fee5388872c2807083ecc__combined']
+best = df[df['key'] == 'd3274864bf5f4632977f4afa160c047906d7cbdd__combined']
+old_best = summary_df[summary_df['key'] == '2cb42ee0540403b24f0fee5388872c2807083ecc__combined']
 sum_selected = summary_df[summary_df['params_hash'] == '0831c421c3c21764421c3cabb4511b56a7527ba0']
 
 best['rmse'].mean()
