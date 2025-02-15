@@ -208,7 +208,7 @@ def detect_sleep(side: Side, start_time: datetime, end_time: datetime, folder_pa
         side,
         rolling_seconds=10,
         threshold_percent=0.70,
-        range_threshold=80_000,
+        range_threshold=20_000,
         range_rolling_seconds=10,
         clean=True
     )

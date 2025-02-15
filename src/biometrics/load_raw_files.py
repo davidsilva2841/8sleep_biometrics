@@ -102,7 +102,7 @@ def _decode_cbor_file(file_path: str, data: dict, start_time, end_time, side: Si
 
                 decoded_data['ts'] = datetime.fromtimestamp(
                     decoded_data['ts'],
-                    # timezone.utc
+                    timezone.utc
                 ).strftime("%Y-%m-%d %H:%M:%S")
                 data[decoded_data['type']].append(decoded_data)
 
